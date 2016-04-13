@@ -37,13 +37,13 @@ function New-JiraIssue
         [String] $IssueType,
 
         [Parameter(Mandatory = $true)]
-        [Int] $Priority,
-
-        [Parameter(Mandatory = $true)]
         [String] $Summary,
 
         [Parameter(Mandatory = $false)]
         [String] $Description,
+
+        [Parameter(Mandatory = $false)]
+        [Int] $Priority,
 
         [Parameter(Mandatory = $false)]
         [Object] $Reporter,
@@ -115,7 +115,6 @@ function New-JiraIssue
     {
         $ProjectParam = New-Object -TypeName PSObject -Property @{"id"=$ProjectObj.Id}
         $IssueTypeParam = New-Object -TypeName PSObject -Property @{"id"=[String] $IssueTypeObj.Id}
-        $PriorityParam = New-Object -TypeName PSObject -Property @{"id"=[String] $Priority}
         $ReporterParam = New-Object -TypeName PSObject -Property @{"name"=$reporterObj.Name}
 
         $props = @{
@@ -123,9 +122,12 @@ function New-JiraIssue
             "summary"=$Summary;
             "description"=$Description;
             "issuetype"=$IssueTypeParam;
-            "priority"=$PriorityParam;
-            "reporter"=$ReporterParam;
-            "labels"=$Labels;
+            "reporter"=$ReporterParam
+        }
+
+        if ($Priority) {
+            $PriorityParam = New-Object -TypeName PSObject -Property @{"id"=[String] $Priority}
+            [void] $props.Add('priority', $PriorityParam)
         }
 
         Write-Debug "[New-JiraIssue] Processing Fields parameter"
