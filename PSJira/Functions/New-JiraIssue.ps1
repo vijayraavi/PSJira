@@ -39,7 +39,7 @@ function New-JiraIssue
         [Parameter(Mandatory = $true)]
         [Int] $Priority,
 
-        [Parameter(Mandatory = $false)]
+        [Parameter(Mandatory = $true)]
         [String] $Summary,
 
         [Parameter(Mandatory = $false)]
