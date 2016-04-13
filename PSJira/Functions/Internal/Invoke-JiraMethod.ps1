@@ -23,9 +23,7 @@ function Invoke-JiraMethod
 #        [Object] $Session
     )
 
-    $headers = @{
-        #'Content-Type' = 'application/json; charset=utf-8';
-    }
+    $headers = @{}
 
     if ($Credential)
     {
