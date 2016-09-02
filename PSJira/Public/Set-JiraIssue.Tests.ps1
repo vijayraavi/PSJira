@@ -5,7 +5,7 @@ $sut = (Split-Path -Leaf $MyInvocation.MyCommand.Path).Replace(".Tests.", ".")
 InModuleScope PSJira {
 
     $ShowMockData = $false
-    $ShowDebugText = $false
+    $ShowDebugText = $true
 
     Describe "Set-JiraIssue" {
         if ($ShowDebugText)
@@ -104,6 +104,11 @@ InModuleScope PSJira {
             It "Uses Set-JiraIssueLabel with the -Set parameter when the -Label parameter is used" {
                 { Set-JiraIssue -Issue TEST-001 -Label 'test' } | Should Not Throw
                 Assert-MockCalled -CommandName Set-JiraIssueLabel -ModuleName PSJira -Times 1 -Scope It -ParameterFilter { $Set -ne $null }
+            }
+
+            It "Sets fix versions if the -FixVersion parameter is passed" {
+                { Set-JiraIssue -Issue TEST-001 -FixVersion 'testFixVersion' } | Should Not Throw
+                Assert-MockCalled -CommandName Invoke-JiraMethod -ModuleName PSJira -Times 1 -Scope It -ParameterFilter { $Method -eq 'Put' -and $URI -like '*/rest/api/2/issue/12345' -and $Body -like '*fixVersions*set*testFixVersion*' }
             }
 
             It "Updates custom fields if provided to the -Fields parameter" {

@@ -50,6 +50,10 @@ function Set-JiraIssue
         # use Set-JiraIssueLabel.
         [String[]] $Label,
 
+        # Fix versions to be set on the issue. These will overwrite any
+        # existing fix versions on the issue.
+        [String[]] $FixVersion,
+
         # Any additional fields that should be updated
         [System.Collections.Hashtable] $Fields,
 
@@ -67,7 +71,7 @@ function Set-JiraIssue
     {
         Write-Debug "[Set-JiraIssue] Checking to see if we have any operations to perform"
         $fieldNames = $Fields.Keys
-        if (-not ($Summary -or $Description -or $Assignee -or $Label -or $fieldNames))
+        if (-not ($Summary -or $Description -or $Assignee -or $Label -or $FixVersion -or $fieldNames))
         {
             Write-Verbose "Nothing to do."
             return
@@ -120,6 +124,7 @@ function Set-JiraIssue
 
                 if ($Summary)
                 {
+                    Write-Debug "[Set-JiraIssue] Adding Summary"
                     # Update properties need to be passed to JIRA as arrays
                     $issueProps.update.summary = @()
                     $issueProps.update.summary += @{
@@ -130,10 +135,30 @@ function Set-JiraIssue
 
                 if ($Description)
                 {
+                    Write-Debug "[Set-JiraIssue] Adding Description"
                     $issueProps.update.description = @()
                     $issueProps.update.description += @{
                         'set' = $Description;
                     }
+                    $actOnIssueUri = $true
+                }
+
+                if ($FixVersion)
+                {
+                    Write-Debug "[Set-JiraIssue] Adding FixVersion"
+                    $fixVersionSet = @()
+                    foreach ($f in $FixVersion) {
+                        $fixVersionSet += @{
+                            'name' = $f;
+                        }
+                    }
+
+                    $issueProps.update.fixVersions = @(
+                        @{
+                            set = $fixVersionSet
+                        }
+                    )
+
                     $actOnIssueUri = $true
                 }
 
@@ -168,7 +193,7 @@ function Set-JiraIssue
 
                 if ($validAssignee)
                 {
-
+                    Write-Debug "[Set-JiraIssue] Adding Assignee"
                     $assigneeProps =  @{
                         'name' = $assigneeString;
                     }
@@ -178,13 +203,12 @@ function Set-JiraIssue
 
                 if ($actOnIssueUri)
                 {
-                    Write-Debug "[Set-JiraIssue] IssueProps: [$issueProps]"
-
-                    Write-Debug "[Set-JiraIssue] Converting results to JSON"
+                    Write-Debug "[Set-JiraIssue] Converting issue properties to JSON"
                     $json = ConvertTo-Json -InputObject $issueProps -Depth 5
-                    $issueObjURL = $issueObj.RestUrl
+                    Write-Debug "[Set-JiraIssue] Raw JSON to be passed to issue URI:`n$json`n"
 
                     Write-Debug "[Set-JiraIssue] Preparing for blastoff!"
+                    $issueObjURL = $issueObj.RestUrl
                     $issueResult = Invoke-JiraMethod -Method Put -URI $issueObjURL -Body $json -Credential $Credential
                     Write-Debug "[Set-JiraIssue] Results are saved to issueResult variable"
                 }
@@ -194,10 +218,11 @@ function Set-JiraIssue
                     # Jira handles assignee differently; you can't change it from the default "edit issues" screen unless
                     # you customize the "Edit Issue" screen.
 
-                    $assigneeUrl = "{0}/assignee" -f $issueObj.RestUrl
                     $json = ConvertTo-Json -InputObject $assigneeProps
+                    Write-Debug "[Set-JiraIssue] Raw JSON to be passed to assignee URI:`n$json`n"
 
                     Write-Debug "[Set-JiraIssue] Preparing for blastoff!"
+                    $assigneeUrl = "{0}/assignee" -f $issueObj.RestUrl
                     $assigneeResult = Invoke-JiraMethod -Method Put -URI $assigneeUrl -Body $json -Credential $Credential
                     Write-Debug "[Set-JiraIssue] Results are saved to assigneeResult variable"
                 }
