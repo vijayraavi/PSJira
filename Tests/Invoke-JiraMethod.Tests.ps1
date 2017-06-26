@@ -15,12 +15,22 @@ InModuleScope JiraPS {
 
     Describe "Invoke-JiraMethod" {
 
+        Mock Get-JiraConfigServer {
+            ShowMockInfo 'Get-JiraConfigServer' -Params ServerName
+            [PSCustomObject] @{
+                Name    = 'RealServer'
+                Url     = 'http://a.real.url'
+                Default = $true
+            }
+        }
+
         Context "Sanity checking" {
             $command = Get-Command -Name Invoke-JiraMethod
 
             defParam $command 'Method'
             defParam $command 'URI'
             defParam $command 'Body'
+            defParam $command 'ServerName'
             defParam $command 'Credential'
 
             It "Has a ValidateSet for the -Method parameter that accepts methods [$($validMethods -join ', ')]" {
@@ -31,7 +41,8 @@ InModuleScope JiraPS {
 
         Context "Behavior testing" {
 
-            $testUri = 'http://example.com'
+            # $testUri = 'http://example.com'
+            $testUri = '/api/2/fake'
             $testUsername = 'testUsername'
             $testPassword = 'password123'
             $testCred = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList $testUsername, (ConvertTo-SecureString -AsPlainText -Force $testPassword)
@@ -43,7 +54,7 @@ InModuleScope JiraPS {
             It "Correctly performs all necessary HTTP method requests [$($validMethods -join ',')] to a provided URI" {
                 foreach ($method in $validMethods) {
                     { Invoke-JiraMethod -Method $method -URI $testUri } | Should Not Throw
-                    Assert-MockCalled -CommandName Invoke-WebRequest -ParameterFilter {$Method -eq $method -and $Uri -eq $testUri} -Scope It
+                    Assert-MockCalled -CommandName Invoke-WebRequest -ParameterFilter {$Method -eq $method -and $Uri -like "*$testUri"} -Scope It
                 }
             }
 
@@ -74,9 +85,52 @@ InModuleScope JiraPS {
                 Assert-MockCalled -CommandName Invoke-WebRequest -ParameterFilter {$Headers.Item('Authorization') -eq "Basic $token"} -Exactly -Times 1 -Scope It
                 Assert-MockCalled -CommandName Invoke-WebRequest -ParameterFilter {-not $Headers.Item('Authorization')} -Exactly -Times 1 -Scope It
             }
+
+            Mock Get-JiraConfigServer {
+                ShowMockInfo 'Get-JiraConfigServer' -Params ServerName
+                [PSCustomObject] @{
+                    Name    = 'RealServer'
+                    Url     = 'http://a.real.url'
+                    Default = $true
+                }
+            }
+
+            It "Uses Get-JiraConfigServer to get the default server when -ServerName is not specified" {
+                Invoke-JiraMethod -Method Get -URI $testUri | Out-Null
+                Assert-MockCalled Get-JiraConfigServer -Scope It -ExclusiveFilter {$ServerName -eq $null}
+            }
+
+            It "Uses Get-JiraConfigServer to get a named server instance when -ServerName is specified" {
+                Invoke-JiraMethod -Method Get -URI $testUri -ServerName 'RealServer' | Out-Null
+                Assert-MockCalled Get-JiraConfigServer -Scope It -ExclusiveFilter {$ServerName -eq 'RealServer'}
+            }
+
+            It 'Calls Invoke-WebRequest on the URL from Get-JiraConfigServer' {
+                Invoke-JiraMethod -Method Get -URI 'api/2/fake' -ServerName 'RealServer' | Out-Null
+                Assert-MockCalled Invoke-WebRequest -Scope It -ExclusiveFilter {$Uri -eq 'http://a.real.url/api/2/fake'}
+            }
+
+            Mock Get-JiraConfigServer
+            Mock Get-JiraConfigServer -ParameterFilter {$ServerName -eq 'RealServer'} {
+                ShowMockInfo 'Get-JiraConfigServer' -Params ServerName
+                [PSCustomObject] @{
+                    Name    = 'RealServer'
+                    Url     = 'http://a.real.url'
+                    Default = $true
+                }
+            }
+
+            It 'Throws a meaningful exception if the server specified in the -ServerName parameter does not exist' {
+                { Invoke-JiraMethod -Method Get -URI $testUri -ServerName 'FakeServer' } | Should Throw 'Server FakeServer does not exist in the configuration file. Use Add-JiraConfigServer to define this server.'
+            }
+
+            It 'Throws a meaningful exception if -ServerName was not specified, but no servers exist in the config file' {
+                { Invoke-JiraMethod -Method Get -URI $testUri } | Should Throw 'A server does not exist in the configuration file. Use Add-JiraConfigServer to define a server.'
+            }
         }
 
-        $validTestUri = 'https://jira.atlassian.com/rest/api/latest/issue/303853'
+        # $validTestUri = 'https://jira.atlassian.com/rest/api/latest/issue/303853'
+        $validTestUri = '/rest/api/latest/issue/303853'
 
         # This is a real REST result from Atlassian's public-facing JIRA instance, trimmed and cleaned
         # up just a bit for fields we don't care about.
@@ -419,7 +473,7 @@ InModuleScope JiraPS {
 
             It "Outputs an object representation of JSON returned from JIRA" {
 
-                Mock Invoke-WebRequest -ParameterFilter {$Method -eq 'Get' -and $Uri -eq $validTestUri} {
+                Mock Invoke-WebRequest -ParameterFilter {$Method -eq 'Get' -and $Uri -like "*$validTestUri"} {
                     ShowMockInfo 'Invoke-WebRequest' -Params 'Uri', 'Method'
                     Write-Output [PSCustomObject] @{
                         'Content' = $validRestResult

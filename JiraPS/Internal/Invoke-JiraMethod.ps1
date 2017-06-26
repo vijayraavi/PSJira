@@ -13,6 +13,9 @@ function Invoke-JiraMethod {
         [ValidateNotNullOrEmpty()]
         [String] $Body,
 
+        [Parameter()]
+        [String] $ServerName,
+
         [Parameter(ParameterSetName = 'UseCredential',
             Mandatory = $false)]
         [System.Management.Automation.PSCredential] $Credential
@@ -28,6 +31,28 @@ function Invoke-JiraMethod {
     $PSDefaultParameterValues = $global:PSDefaultParameterValues
 
     $headers = @{}
+
+    if ($ServerName) {
+        Write-Debug "[Invoke-JiraMethod] Resolving server [$ServerName] from config file"
+        $serverObj = Get-JiraConfigServer -ServerName $ServerName
+        if (-not $serverObj) {
+            throw "Server $ServerName does not exist in the configuration file. Use Add-JiraConfigServer to define this server."
+        }
+    }
+    else {
+        Write-Debug "[Invoke-JiraMethod] Getting default server from config file"
+        $serverObj = Get-JiraConfigServer
+        if (-not $serverObj) {
+            throw 'A server does not exist in the configuration file. Use Add-JiraConfigServer to define a server.'
+        }
+    }
+
+    if ($URI.StartsWith('/')) {
+        $fullUri = "$($serverObj.Url)$URI"
+    }
+    else {
+        $fullUri = "$($serverObj.Url)/$URI"
+    }
 
     if ($Credential) {
         Write-Debug "[Invoke-JiraMethod] Using HTTP Basic authentication with provided credentials for $($Credential.UserName)"
@@ -50,7 +75,7 @@ function Invoke-JiraMethod {
     }
 
     $iwrSplat = @{
-        Uri             = $Uri
+        Uri             = $fullUri
         Headers         = $headers
         Method          = $Method
         ContentType     = 'application/json; charset=utf-8'
@@ -74,7 +99,8 @@ function Invoke-JiraMethod {
 
         Write-Debug "[Invoke-JiraMethod] Invoking JIRA method $Method to URI $URI"
         $webResponse = Invoke-WebRequest @iwrSplat
-    } catch {
+    }
+    catch {
         # Invoke-WebRequest is hard-coded to throw an exception if the Web request returns a 4xx or 5xx error.
         # This is the best workaround I can find to retrieve the actual results of the request.
         $webResponse = $_.Exception.Response
