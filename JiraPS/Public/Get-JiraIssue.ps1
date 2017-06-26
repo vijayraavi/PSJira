@@ -1,5 +1,4 @@
-function Get-JiraIssue
-{
+function Get-JiraIssue {
     <#
     .Synopsis
         Returns information about an issue in JIRA.
@@ -82,71 +81,61 @@ function Get-JiraIssue
         [Parameter(ParameterSetName = 'ByFilter')]
         [Int] $PageSize = 50,
 
+        # Server name from the module config to connect to.
+        # If not specified, the default server will be used.
+        [Parameter(Mandatory = $false)]
+        [String] $ServerName,
+
         # Credentials to use to connect to JIRA.
         # If not specified, this function will use anonymous access.
         [Parameter(Mandatory = $false)]
         [System.Management.Automation.PSCredential] $Credential
     )
 
-    begin
-    {
-        Write-Debug "[Get-JiraIssue] Reading server from config file"
-        $server = Get-JiraConfigServer -ConfigFile $ConfigFile -ErrorAction Stop
-
+    begin {
         Write-Debug "[Get-JiraIssue] ParameterSetName=$($PSCmdlet.ParameterSetName)"
 
         $psName = $PSCmdlet.ParameterSetName
 
-        if (($psName -eq 'ByJQL' -or $psName -eq 'ByFilter') -and $MaxResults -eq 0)
-        {
+        if (($psName -eq 'ByJQL' -or $psName -eq 'ByFilter') -and $MaxResults -eq 0) {
             Write-Debug "[Get-JiraIssue] Using loop mode to obtain all results"
             $MaxResults = 1
             $loopMode = $true
         }
-        else
-        {
+        else {
             $loopMode = $false
         }
     }
 
-    process
-    {
-        if ($PSCmdlet.ParameterSetName -eq 'ByIssueKey')
-        {
-            foreach ($k in $Key)
-            {
+    process {
+        if ($PSCmdlet.ParameterSetName -eq 'ByIssueKey') {
+            foreach ($k in $Key) {
                 Write-Debug "[Get-JiraIssue] Processing issue key [$k]"
-                $issueURL = "$($server)/rest/api/latest/issue/${k}?expand=transitions"
+                $issueURL = "/rest/api/latest/issue/${k}?expand=transitions"
 
                 Write-Debug "[Get-JiraIssue] Preparing for blastoff!"
-                $result = Invoke-JiraMethod -Method Get -URI $issueURL -Credential $Credential
+                $result = Invoke-JiraMethod -Method Get -URI $issueURL -ServerName $ServerName -Credential $Credential
 
-                if ($result)
-                {
+                if ($result) {
                     Write-Debug "[Get-JiraIssue] Converting REST result to Jira object"
                     $obj = ConvertTo-JiraIssue -InputObject $result
 
                     Write-Debug "[Get-JiraIssue] Outputting result"
                     Write-Output $obj
                 }
-                else
-                {
+                else {
                     Write-Debug "[Get-JiraIssue] Invoke-JiraMethod returned no results to output."
                 }
             }
         }
-        elseif ($PSCmdlet.ParameterSetName -eq 'ByInputObject')
-        {
-            foreach ($i in $InputObject)
-            {
+        elseif ($PSCmdlet.ParameterSetName -eq 'ByInputObject') {
+            foreach ($i in $InputObject) {
                 Write-Debug "[Get-JiraIssue] Processing InputObject [$i]"
-                if ((Get-Member -InputObject $i).TypeName -eq 'JiraPS.Issue')
-                {
+                if ((Get-Member -InputObject $i).TypeName -eq 'JiraPS.Issue') {
                     Write-Debug "[Get-JiraIssue] Issue parameter is a JiraPS.Issue object"
                     $issueKey = $i.Key
                 }
-                else
-                {
+                else {
                     $issueKey = $i.ToString()
                     Write-Debug "[Get-JiraIssue] Issue key is assumed to be [$issueKey] via ToString()"
                 }
@@ -157,65 +146,55 @@ function Get-JiraIssue
                 Write-Output $issueObj
             }
         }
-        elseif ($PSCmdlet.ParameterSetName -eq 'ByJQL')
-        {
+        elseif ($PSCmdlet.ParameterSetName -eq 'ByJQL') {
 
             Write-Debug "[Get-JiraIssue] Escaping query and building URL"
             $escapedQuery = [System.Web.HttpUtility]::UrlPathEncode($Query)
-            $issueURL = "$($server)/rest/api/latest/search?jql=$escapedQuery&validateQuery=true&expand=transitions&startAt=$StartIndex&maxResults=$MaxResults"
+            $issueURL = "/rest/api/latest/search?jql=$escapedQuery&validateQuery=true&expand=transitions&startAt=$StartIndex&maxResults=$MaxResults"
 
             Write-Debug "[Get-JiraIssue] Preparing for blastoff!"
-            $result = Invoke-JiraMethod -Method Get -URI $issueURL -Credential $Credential
+            $result = Invoke-JiraMethod -Method Get -URI $issueURL -ServerName $ServerName -Credential $Credential
 
-            if ($result)
-            {
+            if ($result) {
                 # {"startAt":0,"maxResults":50,"total":0,"issues":[]}
 
-                if ($loopMode)
-                {
+                if ($loopMode) {
                     $totalResults = $result.total
 
                     Write-Debug "[Get-JiraIssue] Paging through all issues (loop mode)"
                     $allIssues = New-Object -TypeName System.Collections.ArrayList
 
-                    for ($i = 0; $i -lt $totalResults; $i = $i + $PageSize)
-                    {
+                    for ($i = 0; $i -lt $totalResults; $i = $i + $PageSize) {
                         $percentComplete = ($i / $totalResults) * 100
                         Write-Progress -Activity 'Get-JiraIssue' -Status "Obtaining issues ($i - $($i + $PageSize))..." -PercentComplete $percentComplete
                         Write-Debug "[Get-JiraIssue] Obtaining issues $i - $($i + $PageSize)..."
                         $thisSection = Get-JiraIssue -Query $Query -StartIndex $i -MaxResults $PageSize -Credential $Credential
-                        foreach ($t in $thisSection)
-                        {
+                        foreach ($t in $thisSection) {
                             [void] $allIssues.Add($t)
                         }
                     }
                     Write-Progress -Activity 'Get-JiraIssue' -Status 'Obtaining issues' -Completed
                     Write-Output ($allIssues.ToArray())
                 }
-                elseif ($result.total -gt 0)
-                {
+                elseif ($result.total -gt 0) {
                     Write-Debug "[Get-JiraIssue] Converting REST result to Jira issue"
                     $obj = ConvertTo-JiraIssue -InputObject $result.issues
 
                     Write-Debug "[Get-JiraIssue] Outputting result"
                     Write-Output $obj
                 }
-                else
-                {
+                else {
                     Write-Debug "[Get-JiraIssue] No results were found for the specified query"
                     Write-Verbose "No results were found for the query [$Query]"
                 }
             }
-            else
-            {
+            else {
                 Write-Debug "[Get-JiraIssue] Invoke-JiraMethod returned no results"
             }
         }
-        elseif ($PSCmdlet.ParameterSetName -eq 'ByFilter')
-        {
+        elseif ($PSCmdlet.ParameterSetName -eq 'ByFilter') {
             $filterObj = Get-JiraFilter -InputObject $Filter -Credential $Credential
-            if ($filterObj)
-            {
+            if ($filterObj) {
                 $jql = $filterObj.JQL
                 Write-Debug "[Get-JiraIssue] Invoking myself with filter JQL: [$jql]"
 
@@ -223,34 +202,28 @@ function Get-JiraIssue
                 # was not supplied as a parameter. We don't want to explicitly
                 # invoke this method recursively with a MaxResults value of 1
                 # if it wasn't initially provided to us.
-                if ($loopMode)
-                {
+                if ($loopMode) {
                     $result = Get-JiraIssue -Query $jql -Credential $Credential
                 }
-                else
-                {
+                else {
                     $result = Get-JiraIssue -Query $jql -Credential $Credential -MaxResults $MaxResults
                 }
-                if ($result)
-                {
+                if ($result) {
                     Write-Debug "[Get-JiraIssue] Returned from invoking myself; outputting results"
                     Write-Output $result
                 }
-                else
-                {
+                else {
                     Write-Debug "[Get-JiraIssue] Returned from invoking myself, but no results were found"
                 }
             }
-            else
-            {
+            else {
                 Write-Debug "[Get-JiraIssue] Unable to identify filter [$Filter]"
                 Write-Error "Unable to identify filter [$Filter]. Check Get-JiraFilter for more details."
             }
         }
     }
 
-    end
-    {
+    end {
         Write-Debug "[Get-JiraIssue] Complete"
     }
 }

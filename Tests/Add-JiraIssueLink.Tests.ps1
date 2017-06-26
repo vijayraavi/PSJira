@@ -6,24 +6,21 @@ InModuleScope JiraPS {
     $SuppressImportModule = $true
     . $PSScriptRoot\Shared.ps1
 
-    $jiraServer = 'http://jiraserver.example.com'
-
     $issueKey = "TEST-01"
     $issueLink = [PSCustomObject]@{
         outwardIssue = [PSCustomObject]@{key = "TEST-10"}
-        type = [PSCustomObject]@{name = "Composition"}
+        type         = [PSCustomObject]@{name = "Composition"}
     }
 
 
     Describe 'Add-JiraIssueLink' {
 
-        Mock Get-JiraConfigServer -ModuleName JiraPS {
-            Write-Output $jiraServer
-        }
+        Mock Get-JiraIssue {
+            ShowMockInfo 'Get-JiraIssue' 'Key', 'ServerName'
 
-        Mock Get-JiraIssue -ParameterFilter { $Key -eq $issueKey } {
+            # Creates an object with the value of the $Key parameter
             [PSCustomObject]@{
-                Key = $issueKey;
+                Key = $Key
             }
         }
 
@@ -33,7 +30,7 @@ InModuleScope JiraPS {
             throw "Unidentified call to Invoke-JiraMethod"
         }
 
-        Mock Invoke-JiraMethod -ParameterFilter {$Method -eq 'POST' -and $URI -eq "$jiraServer/rest/api/latest/issueLink"} {
+        Mock Invoke-JiraMethod -ParameterFilter {$Method -eq 'POST' -and $URI -eq "/rest/api/latest/issueLink"} {
             ShowMockInfo 'Invoke-JiraMethod' 'Method', 'Uri'
             return $true
         }
@@ -66,6 +63,12 @@ InModuleScope JiraPS {
 
             It 'Validates pipeline input object' {
                 { "foo" | Add-JiraIssueLink -IssueLink $issueLink } | Should Throw
+            }
+
+            It "Passes the -ServerName parameter to both Get-JiraIssue and Invoke-JiraMethod if specified" {
+                Add-JiraIssueLink -Issue $issueKey -IssueLink $issueLink -ServerName 'testServer' | Out-Null
+                Assert-MockCalled -CommandName Get-JiraIssue -ParameterFilter {$ServerName -eq 'testServer'}
+                Assert-MockCalled -CommandName Invoke-JiraMethod -ParameterFilter {$ServerName -eq 'testServer'}
             }
         }
     }

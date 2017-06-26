@@ -1,5 +1,4 @@
-function Add-JiraIssueComment
-{
+function Add-JiraIssueComment {
     <#
     .Synopsis
        Adds a comment to an existing JIRA issue
@@ -44,47 +43,20 @@ function Add-JiraIssueComment
         [ValidateSet('All Users', 'Developers', 'Administrators')]
         [String] $VisibleRole = 'Developers',
 
+        # Server name from the module config to connect to.
+        # If not specified, the default server will be used.
+        [Parameter(Mandatory = $false)]
+        [String] $ServerName,
+
         # Credentials to use to connect to JIRA.
         # If not specified, this function will use anonymous access.
         [Parameter(Mandatory = $false)]
         [System.Management.Automation.PSCredential] $Credential
     )
 
-    begin
-    {
-        Write-Debug "[Add-JiraIssueComment] Begin"
-        # We can't validate pipeline input here, since pipeline input doesn't exist in the Begin block.
-    }
-
-    process
-    {
-        #        Write-Debug "[Add-JiraIssueComment] Checking Issue parameter"
-#        if ($Issue.PSObject.TypeNames[0] -eq 'JiraPS.Issue')
-        #        {
-#            Write-Debug "[Add-JiraIssueComment] Issue parameter is a JiraPS.Issue object"
-        #            $issueObj = $Issue
-        #        } else {
-        #            $issueKey = $Issue.ToString()
-        #            Write-Debug "[Add-JiraIssueComment] Issue key is assumed to be [$issueKey] via ToString()"
-        #            Write-Verbose "Searching for issue [$issueKey]"
-        #            try
-        #            {
-        #                $issueObj = Get-JiraIssue -Key $issueKey -Credential $Credential
-        #            } catch {
-        #                $err = $_
-        #                Write-Debug 'Encountered an error searching for Jira issue. An exception will be thrown.'
-        #                throw $err
-        #            }
-        #        }
-        #
-        #        if (-not $issueObj)
-        #        {
-        #            Write-Debug "[Add-JiraIssueComment] No Jira issues were found for parameter [$Issue]. An exception will be thrown."
-        #            throw "Unable to identify Jira issue [$Issue]. Does this issue exist?"
-        #        }
-
+    process {
         Write-Debug "[Add-JiraIssueComment] Obtaining a reference to Jira issue [$Issue]"
-        $issueObj = Get-JiraIssue -InputObject $Issue -Credential $Credential
+        $issueObj = Get-JiraIssue -InputObject $Issue -ServerName $ServerName -Credential $Credential
 
         $url = "$($issueObj.RestURL)/comment"
 
@@ -96,8 +68,7 @@ function Add-JiraIssueComment
         # If the visible role should be all users, the visibility block shouldn't be passed at
         # all. JIRA returns a 500 Internal Server Error if you try to pass this block with a
         # value of "All Users".
-        if ($VisibleRole -ne 'All Users')
-        {
+        if ($VisibleRole -ne 'All Users') {
             $props.visibility = @{
                 'type'  = 'role';
                 'value' = $VisibleRole;
@@ -117,8 +88,7 @@ function Add-JiraIssueComment
         Write-Output $result
     }
 
-    end
-    {
+    end {
         Write-Debug "[Add-JiraIssueComment] Complete"
     }
 }

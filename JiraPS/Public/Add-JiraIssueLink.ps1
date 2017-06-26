@@ -34,18 +34,18 @@ function Add-JiraIssueLink {
         # Write a comment to the issue
         [String] $Comment,
 
+        # Server name from the module config to connect to.
+        # If not specified, the default server will be used.
+        [Parameter(Mandatory = $false)]
+        [String] $ServerName,
+
         # Credentials to use to connect to Jira
         [Parameter(Mandatory = $false)]
-        [System.Management.Automation.PSCredential] $Credential<#,
-
-        [Switch] $PassThru#>
+        [System.Management.Automation.PSCredential] $Credential
     )
 
     begin {
-        Write-Debug "[Add-JiraIssueLink] Reading server from config file"
-        $server = Get-JiraConfigServer -ConfigFile $ConfigFile -ErrorAction Stop
-
-        $issueLinkURL = "$($server)/rest/api/latest/issueLink"
+        $issueLinkURL = "/rest/api/latest/issueLink"
     }
 
     process {
@@ -66,7 +66,7 @@ function Add-JiraIssueLink {
 
         foreach ($i in $Issue) {
             Write-Debug "[Add-JiraIssueLink] Obtaining reference to issue"
-            $issueObj = Get-JiraIssue -InputObject $i -Credential $Credential
+            $issueObj = Get-JiraIssue -InputObject $i -ServerName $ServerName -Credential $Credential
 
             foreach ($link in $IssueLink) {
                 if ($link.inwardIssue) {
@@ -83,15 +83,16 @@ function Add-JiraIssueLink {
                     $outwardIssue = [PSCustomObject]@{key = $issueObj.key}
                 }
 
-                $body = [PSCustomObject]@{
+                $body = [PSCustomObject] @{
                     type         = [PSCustomObject]@{name = $link.type.name}
                     inwardIssue  = $inwardIssue
                     outwardIssue = $outwardIssue
                 }
-                if ($Comment) {$body["comment"] = [PSCustomObject]@{body = $Comment}}
+                if ($Comment) {$body["comment"] = [PSCustomObject]@{body = $Comment}
+                }
                 $json = ConvertTo-Json $body
 
-                $null = Invoke-JiraMethod -Method POST -URI $issueLinkURL -Body $json -Credential $Credential
+                $null = Invoke-JiraMethod -Method POST -URI $issueLinkURL -Body $json -ServerName $ServerName -Credential $Credential
             }
         }
     }

@@ -2,11 +2,9 @@
 
 InModuleScope JiraPS {
 
-    [System.Diagnostics.CodeAnalysis.SuppressMessage('PSUseDeclaredVarsMoreThanAssigments', '', Scope='*', Target='SuppressImportModule')]
+    [System.Diagnostics.CodeAnalysis.SuppressMessage('PSUseDeclaredVarsMoreThanAssigments', '', Scope = '*', Target = 'SuppressImportModule')]
     $SuppressImportModule = $true
     . $PSScriptRoot\Shared.ps1
-
-    $jiraServer = 'http://jiraserver.example.com'
 
     # In most test cases, user 1 is a member of the group and user 2 is not
     $testGroupName = 'testGroup'
@@ -15,45 +13,35 @@ InModuleScope JiraPS {
 
     Describe "Add-JiraGroupMember" {
 
-        Mock Write-Debug -ModuleName JiraPS {
-            if ($ShowDebugData)
-            {
+        Mock Write-Debug {
+            if ($ShowDebugData) {
                 Write-Host -Object "[DEBUG] $Message" -ForegroundColor Yellow
             }
         }
 
-        Mock Get-JiraConfigServer -ModuleName JiraPS {
-            Write-Output $jiraServer
-        }
-
-        Mock Get-JiraGroup -ModuleName JiraPS {
+        Mock Get-JiraGroup {
             [PSCustomObject] @{
-                'Name' = $testGroupName;
-                'Size' = 2;
+                'Name' = $testGroupName
+                'Size' = 2
             }
         }
 
         Mock Get-JiraUser -ModuleName JiraPS {
             [PSCustomObject] @{
-                'Name' = "$InputObject";
+                'Name' = "$InputObject"
             }
         }
 
         Mock Get-JiraGroupMember -ModuleName JiraPS {
             @(
                 [PSCustomObject] @{
-                    'Name'=$testUsername1;
+                    'Name' = $testUsername1
                 }
             )
         }
 
         Mock Invoke-JiraMethod -ModuleName JiraPS {
-            if ($ShowMockData)
-            {
-                Write-Host "       Mocked Invoke-JiraMethod" -ForegroundColor Cyan
-                Write-Host "         [Method] $Method" -ForegroundColor Cyan
-                Write-Host "         [URI]    $URI" -ForegroundColor Cyan
-            }
+            ShowMockInfo 'Invoke-JiraMethod' -Params 'Method', 'URI'
         }
 
         #############
@@ -61,20 +49,26 @@ InModuleScope JiraPS {
         #############
         Context "Sanity checking" {
 
+            $expectedUrl = "/rest/api/latest/group/user?groupname=$testGroupName"
             It "Accepts a group name as a String to the -Group parameter" {
                 { Add-JiraGroupMember -Group $testGroupName -User $testUsername2 } | Should Not Throw
-                Assert-MockCalled -CommandName Invoke-JiraMethod -ParameterFilter {$URI -match $testGroupName} -Exactly -Times 1 -Scope It
+                Assert-MockCalled -CommandName Invoke-JiraMethod -ParameterFilter {$URI -eq $expectedUrl} -Exactly -Times 1 -Scope It
             }
 
             It "Accepts a JiraPS.Group object to the -Group parameter" {
-                $group = Get-JiraGroup -GroupName $testGroupName
+                Get-JiraGroup -GroupName $testGroupName | Out-Null
                 { Add-JiraGroupMember -Group $testGroupName -User $testUsername2 } | Should Not Throw
-                Assert-MockCalled -CommandName Invoke-JiraMethod -ParameterFilter {$URI -match $testGroupName} -Exactly -Times 1 -Scope It
+                Assert-MockCalled -CommandName Invoke-JiraMethod -ParameterFilter {$URI -eq $expectedUrl} -Exactly -Times 1 -Scope It
             }
 
             It "Accepts pipeline input from Get-JiraGroup" {
                 { Get-JiraGroup -GroupName $testGroupName | Add-JiraGroupMember -User $testUsername2 } | Should Not Throw
-                Assert-MockCalled -CommandName Invoke-JiraMethod -ParameterFilter {$URI -match $testGroupName} -Exactly -Times 1 -Scope It
+                Assert-MockCalled -CommandName Invoke-JiraMethod -ParameterFilter {$URI -eq $expectedUrl} -Exactly -Times 1 -Scope It
+            }
+
+            It "Passes the -ServerName parameter to Invoke-JiraMethod if specified" {
+                Add-JiraGroupMember -GroupName $testGroupName -User $testUsername2 -ServerName 'testServer' | Out-Null
+                Assert-MockCalled -CommandName Invoke-JiraMethod -ParameterFilter {$ServerName -eq 'testServer'}
             }
         }
 
@@ -98,18 +92,16 @@ InModuleScope JiraPS {
                 }
 
                 # Should use the REST method twice, since at present, you can only add one group member per API call
-                { Add-JiraGroupMember -Group $testGroupName -User $testUsername1,$testUsername2 } | Should Not Throw
+                { Add-JiraGroupMember -Group $testGroupName -User $testUsername1, $testUsername2 } | Should Not Throw
                 Assert-MockCalled -CommandName Invoke-JiraMethod -ParameterFilter {$Method -eq 'Post' -and $URI -match $testGroupName} -Exactly -Times 2 -Scope It
             }
         }
 
         Context "Error checking" {
             It "Gracefully handles cases where a provided user is already in the provided group" {
-                { Add-JiraGroupMember -Group $testGroupName -User $testUsername1,$testUsername2 } | Should Not Throw
+                { Add-JiraGroupMember -Group $testGroupName -User $testUsername1, $testUsername2 } | Should Not Throw
                 Assert-MockCalled -CommandName Invoke-JiraMethod -ParameterFilter {$Method -eq 'Post' -and $URI -match $testGroupName} -Exactly -Times 1 -Scope It
             }
         }
     }
 }
-
-

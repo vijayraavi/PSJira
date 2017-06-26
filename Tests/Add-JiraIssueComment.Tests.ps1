@@ -2,7 +2,7 @@
 
 InModuleScope JiraPS {
 
-    [System.Diagnostics.CodeAnalysis.SuppressMessage('PSUseDeclaredVarsMoreThanAssigments', '', Scope='*', Target='SuppressImportModule')]
+    [System.Diagnostics.CodeAnalysis.SuppressMessage('PSUseDeclaredVarsMoreThanAssigments', '', Scope = '*', Target = 'SuppressImportModule')]
     $SuppressImportModule = $true
     . $PSScriptRoot\Shared.ps1
 
@@ -22,8 +22,7 @@ InModuleScope JiraPS {
 
     Describe "Add-JiraIssueComment" {
 
-        if ($ShowDebugText)
-        {
+        if ($ShowDebugText) {
             Mock "Write-Debug" {
                 Write-Host "       [DEBUG] $Message" -ForegroundColor Yellow
             }
@@ -35,15 +34,14 @@ InModuleScope JiraPS {
 
         Mock Get-JiraIssue {
             [PSCustomObject] @{
-                ID = $issueID;
-                Key = $issueKey;
+                ID      = $issueID;
+                Key     = $issueKey;
                 RestUrl = "$jiraServer/rest/api/latest/issue/$issueID";
             }
         }
 
         Mock Invoke-JiraMethod -ParameterFilter {$Method -eq 'POST' -and $URI -eq "$jiraServer/rest/api/latest/issue/$issueID/comment"} {
-            if ($ShowMockData)
-            {
+            if ($ShowMockData) {
                 Write-Host "       Mocked Invoke-JiraMethod with POST method" -ForegroundColor Cyan
                 Write-Host "         [Method] $Method" -ForegroundColor Cyan
                 Write-Host "         [URI]    $URI" -ForegroundColor Cyan
@@ -84,6 +82,11 @@ InModuleScope JiraPS {
             # Get-JiraIssue should be called once here, and once inside Add-JiraIssueComment (to identify the InputObject parameter)
             Assert-MockCalled -CommandName Get-JiraIssue -ModuleName JiraPS -Exactly -Times 2 -Scope It
             Assert-MockCalled -CommandName Invoke-JiraMethod -ModuleName JiraPS -Exactly -Times 1 -Scope It
+        }
+
+        It "Passes the -ServerName parameter to Get-JiraIssue if specified" {
+            Add-JiraIssueComment -Comment 'This is a test comment from Pester.' -Issue $issueKey -Server 'testServer' | Out-Null
+            Assert-MockCalled -CommandName Get-JiraIssue -ParameterFilter {$ServerName -eq 'testServer'}
         }
 
         Context "Output checking" {
