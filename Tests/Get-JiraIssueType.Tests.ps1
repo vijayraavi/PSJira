@@ -4,90 +4,70 @@ InModuleScope JiraPS {
 
     $jiraServer = 'http://jiraserver.example.com'
 
-    $issueTypeId = 2
-    $issueTypeName = 'Desktop Support'
+    $issueTypeId = 10103
+    $issueTypeName = 'Bug'
 
     $restResult = @"
 [
-  {
-    "self": "$jiraServer/rest/api/latest/issuetype/12",
-    "id": "12",
-    "description": "This issue type is no longer used.",
-    "iconUrl": "$jiraServer/images/icons/issuetypes/delete.png",
-    "name": "ZZ_DO_NOT_USE",
-    "subtask": false
-  },
-  {
-    "self": "$jiraServer/rest/api/latest/issuetype/11",
-    "id": "11",
-    "description": "An issue related to classroom technology, moodle, library services",
-    "iconUrl": "$jiraServer/images/icons/issuetypes/documentation.png",
-    "name": "Educational Technology Services",
-    "subtask": false
-  },
-  {
-    "self": "$jiraServer/rest/api/latest/issuetype/4",
-    "id": "4",
-    "description": "An issue related to network connectivity or infrastructure including Access Control.",
-    "iconUrl": "$jiraServer/images/icons/issuetypes/improvement.png",
-    "name": "Network Services",
-    "subtask": false
-  },
-  {
-    "self": "$jiraServer/rest/api/latest/issuetype/6",
-    "id": "6",
-    "description": "An issue related to telephone services",
-    "iconUrl": "$jiraServer/images/icons/issuetypes/genericissue.png",
-    "name": "Telephone Services",
-    "subtask": false
-  },
-  {
-    "self": "$jiraServer/rest/api/latest/issuetype/8",
-    "id": "8",
-    "description": "An issue related to A/V and media services including teacher stations",
-    "iconUrl": "$jiraServer/images/icons/issuetypes/genericissue.png",
-    "name": "A/V-Media Services",
-    "subtask": false
-  },
-  {
-    "self": "$jiraServer/rest/api/latest/issuetype/1",
-    "id": "1",
-    "description": "An issue related to Banner, MU Online, Oracle Reports, MU Account Suite, Hobsons, or CS Gold",
-    "iconUrl": "$jiraServer/images/icons/issuetypes/bug.png",
-    "name": "Administrative System",
-    "subtask": false
-  },
-  {
-    "self": "$jiraServer/rest/api/latest/issuetype/10",
-    "id": "10",
-    "description": "The sub-task of the issue",
-    "iconUrl": "$jiraServer/images/icons/issuetypes/subtask_alternate.png",
-    "name": "Sub-task",
-    "subtask": true
-  },
-  {
-    "self": "$jiraServer/rest/api/latest/issuetype/2",
-    "id": "2",
-    "description": "An issue related to end-user workstations.",
-    "iconUrl": "$jiraServer/images/icons/issuetypes/newfeature.png",
-    "name": "Desktop Support",
-    "subtask": false
-  }
+    {
+        "self": "$jiraServer/rest/api/latest/issuetype/10100",
+        "id": "10100",
+        "description": "A user story. Created by JIRA Software - do not edit or delete.",
+        "iconUrl": "$jiraServer/secure/viewavatar?size=xsmall&avatarId=10315&avatarType=issuetype",
+        "name": "Story",
+        "subtask": false,
+        "avatarId": 10315
+    },
+    {
+        "self": "$jiraServer/rest/api/latest/issuetype/10101",
+        "id": "10101",
+        "description": "A task that needs to be done.",
+        "iconUrl": "$jiraServer/secure/viewavatar?size=xsmall&avatarId=10318&avatarType=issuetype",
+        "name": "Task",
+        "subtask": false,
+        "avatarId": 10318
+    },
+    {
+        "self": "$jiraServer/rest/api/latest/issuetype/10103",
+        "id": "10103",
+        "description": "jira.translation.issuetype.bug.name.desc",
+        "iconUrl": "$jiraServer/secure/viewavatar?size=xsmall&avatarId=10303&avatarType=issuetype",
+        "name": "Bug",
+        "subtask": false,
+        "avatarId": 10303
+    },
+    {
+        "self": "$jiraServer/rest/api/latest/issuetype/10102",
+        "id": "10102",
+        "description": "The sub-task of the issue",
+        "iconUrl": "$jiraServer/secure/viewavatar?size=xsmall&avatarId=10316&avatarType=issuetype",
+        "name": "Sub-task",
+        "subtask": true,
+        "avatarId": 10316
+    },
+    {
+        "self": "$jiraServer/rest/api/latest/issuetype/10000",
+        "id": "10000",
+        "description": "A big user story that needs to be broken down. Created by JIRA Software - do not edit or delete.",
+        "iconUrl": "$jiraServer/images/icons/issuetypes/epic.svg",
+        "name": "Epic",
+        "subtask": false
+    }
 ]
 "@
 
     Describe "Get-JiraIssueType" {
 
-        Mock Get-JiraConfigServer -ModuleName JiraPS {
+        Mock Get-JiraConfigServer {
             Write-Output $jiraServer
         }
 
-        Mock Invoke-JiraMethod -ModuleName JiraPS -ParameterFilter {$Method -eq 'Get' -and $Uri -eq "$jiraServer/rest/api/latest/issuetype"} {
+        Mock Invoke-JiraMethod -ParameterFilter {$Method -eq 'Get' -and $Uri -eq "/rest/api/latest/issuetype"} {
             ConvertFrom-Json2 $restResult
         }
 
         # Generic catch-all. This will throw an exception if we forgot to mock something.
-        Mock Invoke-JiraMethod -ModuleName JiraPS {
+        Mock Invoke-JiraMethod {
             Write-Host "       Mocked Invoke-JiraMethod with no parameter filter." -ForegroundColor DarkRed
             Write-Host "         [Method]         $Method" -ForegroundColor DarkRed
             Write-Host "         [URI]            $URI" -ForegroundColor DarkRed
@@ -97,8 +77,8 @@ InModuleScope JiraPS {
         It "Gets all issue types in Jira if called with no parameters" {
             $allResults = Get-JiraIssueType
             $allResults | Should Not BeNullOrEmpty
-            @($allResults).Count | Should Be 8
-            Assert-MockCalled -CommandName Invoke-JiraMethod -ModuleName JiraPS -Exactly -Times 1 -Scope It
+            @($allResults).Count | Should Be (ConvertFrom-Json2 $restResult).Count
+            Assert-MockCalled -CommandName Invoke-JiraMethod -Exactly -Times 1 -Scope It
         }
 
         It "Gets a specified issue type if an issue type ID is provided" {
@@ -116,10 +96,15 @@ InModuleScope JiraPS {
         }
 
         It "Handles positional parameters correctly" {
-            $oneResult = Get-JiraIssueType 'Desktop Support'
+            $oneResult = Get-JiraIssueType $issueTypeName
             $oneResult | Should Not BeNullOrEmpty
-            $oneResult.ID | Should Be 2
-            $oneResult.Name | Should Be 'Desktop Support'
+            $oneResult.ID | Should Be $issueTypeId
+            $oneResult.Name | Should Be $issueTypeName
+        }
+
+        It "Passes the -ServerName parameter to Invoke-JiraMethod if specified" {
+            Get-JiraIssueType $issueTypeName -ServerName 'testServer' | Out-Null
+            Assert-MockCalled -CommandName Invoke-JiraMethod -ParameterFilter {$ServerName -eq 'testServer'}
         }
 
         Context "Output Checking" {

@@ -3,13 +3,12 @@
 
 InModuleScope JiraPS {
 
-    [System.Diagnostics.CodeAnalysis.SuppressMessage('PSUseDeclaredVarsMoreThanAssigments', '', Scope='*', Target='SuppressImportModule')]
+    [System.Diagnostics.CodeAnalysis.SuppressMessage('PSUseDeclaredVarsMoreThanAssigments', '', Scope = '*', Target = 'SuppressImportModule')]
     $SuppressImportModule = $true
     . $PSScriptRoot\Shared.ps1
 
     Describe 'Get-JiraFilter' {
-        if ($ShowDebugText)
-        {
+        if ($ShowDebugText) {
             Mock 'Write-Debug' {
                 Write-Host "       [DEBUG] $Message" -ForegroundColor Yellow
             }
@@ -22,8 +21,7 @@ InModuleScope JiraPS {
         # If we don't override this in a context or test, we don't want it to
         # actually try to query a JIRA instance
         Mock Invoke-JiraMethod -ModuleName JiraPS {
-            if ($ShowMockData)
-            {
+            if ($ShowMockData) {
                 Write-Host "       Mocked Invoke-WebRequest" -ForegroundColor Cyan
                 Write-Host "         [Uri]     $Uri" -ForegroundColor Cyan
                 Write-Host "         [Method]  $Method" -ForegroundColor Cyan
@@ -33,8 +31,7 @@ InModuleScope JiraPS {
         Context "Sanity checking" {
             $command = Get-Command -Name Get-JiraFilter
 
-            function defParam($name)
-            {
+            function defParam($name) {
                 It "Has a -$name parameter" {
                     $command.Parameters.Item($name) | Should Not BeNullOrEmpty
                 }
@@ -49,6 +46,11 @@ InModuleScope JiraPS {
             It "Queries JIRA for a filter with a given ID" {
                 { Get-JiraFilter -Id 12345 } | Should Not Throw
                 Assert-MockCalled -CommandName Invoke-JiraMethod -ModuleName JiraPS -Exactly -Times 1 -Scope It -ParameterFilter {$Method -eq 'Get' -and $URI -like '*/rest/api/*/filter/12345'}
+            }
+
+            It "Passes the -ServerName parameter to Invoke-JiraMethod if specified" {
+                Get-JiraFilter -Id 12345 -ServerName 'testServer' | Out-Null
+                Assert-MockCalled -CommandName Invoke-JiraMethod -ParameterFilter {$ServerName -eq 'testServer'}
             }
 
             It "Uses ConvertTo-JiraFilter to output a Filter object if JIRA returns data" {
@@ -111,7 +113,7 @@ InModuleScope JiraPS {
             }
 
             It "Accepts multiple filter IDs to the -Filter parameter" {
-                { Get-JiraFilter -Id '12345','67890' } | Should Not Throw
+                { Get-JiraFilter -Id '12345', '67890' } | Should Not Throw
                 Assert-MockCalled -CommandName Invoke-JiraMethod -ModuleName JiraPS -Exactly -Times 1 -Scope It -ParameterFilter {$Method -eq 'Get' -and $URI -like '*/rest/api/*/filter/12345'}
                 Assert-MockCalled -CommandName Invoke-JiraMethod -ModuleName JiraPS -Exactly -Times 1 -Scope It -ParameterFilter {$Method -eq 'Get' -and $URI -like '*/rest/api/*/filter/67890'}
             }

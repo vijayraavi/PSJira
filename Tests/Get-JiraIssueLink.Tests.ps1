@@ -2,11 +2,9 @@
 
 InModuleScope JiraPS {
 
-    [System.Diagnostics.CodeAnalysis.SuppressMessage('PSUseDeclaredVarsMoreThanAssigments', '', Scope='*', Target='SuppressImportModule')]
+    [System.Diagnostics.CodeAnalysis.SuppressMessage('PSUseDeclaredVarsMoreThanAssigments', '', Scope = '*', Target = 'SuppressImportModule')]
     $SuppressImportModule = $true
     . $PSScriptRoot\Shared.ps1
-
-    $jiraServer = 'http://jiraserver.example.com'
 
     $issueLinkId = 1234
 
@@ -22,21 +20,18 @@ InModuleScope JiraPS {
 "@
 
     Describe "Get-JiraIssueLink" {
-        Mock Get-JiraConfigServer -ModuleName JiraPS {
-            Write-Output $jiraServer
-        }
 
         # Generic catch-all. This will throw an exception if we forgot to mock something.
-        Mock Invoke-JiraMethod -ModuleName JiraPS {
+        Mock Invoke-JiraMethod {
             ShowMockInfo 'Invoke-JiraMethod' 'Method', 'Uri'
             throw "Unidentified call to Invoke-JiraMethod"
         }
 
-        Mock Invoke-JiraMethod -ModuleName JiraPS -ParameterFilter {$Method -eq 'Get' -and $URI -eq "$jiraServer/rest/api/2/issueLink/1234"} {
+        Mock Invoke-JiraMethod -ParameterFilter {$Method -eq 'Get' -and $URI -eq "/rest/api/2/issueLink/$issueLinkId"} {
             ConvertFrom-Json2 $resultsJson
         }
 
-        Mock Get-JiraIssue -ModuleName JiraPS -ParameterFilter {$Key -eq "TEST-01"} {
+        Mock Get-JiraIssue -ParameterFilter {$Key -eq "TEST-01"} {
             # We don't care about the content of any field except for the id
             $obj = [PSCustomObject]@{
                 "id"          = $issueLinkId
@@ -55,13 +50,13 @@ InModuleScope JiraPS {
         # Tests
         #############
 
-        It "Returns details about specific issuelink" {
+        It "Returns details about a specific issue link" {
             $result = Get-JiraIssueLink -Id $issueLinkId
             $result | Should Not BeNullOrEmpty
             @($result).Count | Should Be 1
         }
 
-        It "Provides the key of the project" {
+        It "Provides the ID of the issue link" {
             $result = Get-JiraIssueLink -Id $issueLinkId
             $result.Id | Should Be $issueLinkId
         }
@@ -69,6 +64,11 @@ InModuleScope JiraPS {
         It "Accepts input from pipeline" {
             $result = (Get-JiraIssue -Key TEST-01).issuelinks | Get-JiraIssueLink
             $result.Id | Should Be $issueLinkId
+        }
+
+        It "Passes the -ServerName parameter to Invoke-JiraMethod if specified" {
+            Get-JiraIssueLink -Id $issueLinkId -ServerName 'testServer'
+            Assert-MockCalled -CommandName Invoke-JiraMethod -ParameterFilter {$ServerName -eq 'testServer'}
         }
 
         It 'Fails if input from the pipeline is of the wrong type' {

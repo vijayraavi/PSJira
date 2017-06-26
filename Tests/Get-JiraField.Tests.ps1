@@ -2,8 +2,6 @@
 
 InModuleScope JiraPS {
 
-    $jiraServer = 'http://jiraserver.example.com'
-
     # In my Jira instance, this returns 34 objects. I've stripped it down quite a bit for testing.
     $restResult = @"
 [
@@ -132,11 +130,7 @@ InModuleScope JiraPS {
 "@
 
     Describe "Get-JiraField" {
-        Mock Get-JiraConfigServer -ModuleName JiraPS {
-            Write-Output $jiraServer
-        }
-
-        Mock Invoke-JiraMethod -ModuleName JiraPS -ParameterFilter {$Method -eq 'Get' -and $Uri -eq "$jiraServer/rest/api/latest/field"} {
+        Mock Invoke-JiraMethod -ModuleName JiraPS -ParameterFilter {$Method -eq 'Get' -and $Uri -eq "/rest/api/latest/field"} {
             ConvertFrom-Json2 $restResult
         }
 
@@ -168,6 +162,11 @@ InModuleScope JiraPS {
             $oneResult | Should Not BeNullOrEmpty
             $oneResult.ID | Should Be issuetype
             $oneResult.Name | Should Be 'Issue Type'
+        }
+
+        It "Passes the -ServerName parameter to Invoke-JiraMethod if specified" {
+            Get-JiraField 'Issue Type' -ServerName 'testServer' | Out-Null
+            Assert-MockCalled -CommandName Invoke-JiraMethod -ParameterFilter {$ServerName -eq 'testServer'}
         }
 
         It "Uses ConvertTo-JiraField to beautify output" {

@@ -1,5 +1,4 @@
-﻿function Get-JiraIssueWatcher
-{
+﻿function Get-JiraIssueWatcher {
     <#
     .Synopsis
        Returns watchers on an issue in JIRA.
@@ -22,55 +21,53 @@
     param(
         # JIRA issue to check for watchers. Can be a JiraPS.Issue object, issue key, or internal issue ID.
         [Parameter(Mandatory = $true,
-                   Position = 0,
-                   ValueFromPipeline = $true,
-                   ValueFromPipelineByPropertyName = $true)]
+            Position = 0,
+            ValueFromPipeline = $true,
+            ValueFromPipelineByPropertyName = $true)]
         [Alias('Key')]
         [Object] $Issue,
+
+        # Server name from the module config to connect to.
+        # If not specified, the default server will be used.
+        [Parameter(Mandatory = $false)]
+        [String] $ServerName,
 
         # Credentials to use to connect to Jira
         [Parameter(Mandatory = $false)]
         [System.Management.Automation.PSCredential] $Credential
     )
 
-    begin
-    {
-        # We can't validate pipeline input here, since pipeline input doesn't exist in the Begin block.
-    }
-
-    process
-    {
-        Write-Debug "Obtaining a reference to Jira issue [$Issue]"
-        $issueObj = Get-JiraIssue -InputObject $Issue -Credential $Credential
+    process {
+        Write-Debug "[Get-JiraIssueWatcher] Obtaining a reference to Jira issue [$Issue]"
+        $issueObj = Get-JiraIssue -InputObject $Issue -ServerName $ServerName -Credential $Credential
 
         $url = "$($issueObj.RestURL)/watchers"
 
-        Write-Debug "Preparing for blastoff!"
+        Write-Debug "[Get-JiraIssueWatcher] Preparing for blastoff!"
         $result = Invoke-JiraMethod -Method Get -URI $url -Credential $Credential
 
-        if ($result)
-        {
-            if ($result.watchers)
-            {
+        if ($result) {
+            if ($result.watchers) {
                 Write-Verbose "Result: $($result)"
                 Write-Verbose "Watchers: $($result.Watchers)"
 
-                Write-Debug "Converting result to Jira user objects"
+                Write-Debug "[Get-JiraIssueWatcher] Converting result to Jira user objects"
                 $obj = ConvertTo-JiraUser -InputObject $result.watchers
 
-                Write-Debug "Outputting results"
+                Write-Debug "[Get-JiraIssueWatcher] Outputting results"
                 Write-Output $obj
-            } else {
-                Write-Debug "Result appears to be in an unexpected format. Outputting raw result."
+            }
+            else {
+                Write-Debug "[Get-JiraIssueWatcher] Result appears to be in an unexpected format. Outputting raw result."
                 Write-Output $result
             }
-        } else {
-            Write-Debug "Invoke-JiraMethod returned no results to output."
+        }
+        else {
+            Write-Debug "[Get-JiraIssueWatcher] Invoke-JiraMethod returned no results to output."
         }
     }
 
-    end
-    {
-        Write-Debug "Completed Get-JiraIssueWatcher"
+    end {
+        Write-Debug "[Get-JiraIssueWatcher] Completed"
     }
 }

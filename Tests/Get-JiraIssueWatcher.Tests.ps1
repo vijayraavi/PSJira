@@ -2,14 +2,14 @@
 
 InModuleScope JiraPS {
 
-    [System.Diagnostics.CodeAnalysis.SuppressMessage('PSUseDeclaredVarsMoreThanAssigments', '', Scope='*', Target='SuppressImportModule')]
+    [System.Diagnostics.CodeAnalysis.SuppressMessage('PSUseDeclaredVarsMoreThanAssigments', '', Scope = '*', Target = 'SuppressImportModule')]
     $SuppressImportModule = $true
     . $PSScriptRoot\Shared.ps1
 
     $jiraServer = 'http://jiraserver.example.com'
     $jiraServer = 'http://jiraserver.example.com'
-    $issueID = 41701
-    $issueKey = 'IT-3676'
+    $issueID = 12345
+    $issueKey = 'TEST-1'
 
     Describe "Get-JiraIssueWatcher" {
 
@@ -31,14 +31,12 @@ InModuleScope JiraPS {
     ]
 }
 "@
-        Mock Get-JiraConfigServer -ModuleName JiraPS {
-            Write-Output $jiraServer
-        }
 
         Mock Get-JiraIssue -ModuleName JiraPS {
+            ShowMockInfo 'Get-JiraIssue' 'Key', 'ServerName'
             [PSCustomObject] @{
                 ID      = $issueID;
-                Key = $issueKey;
+                Key     = $issueKey;
                 RestUrl = "$jiraServer/rest/api/latest/issue/$issueID";
             }
         }
@@ -51,7 +49,7 @@ InModuleScope JiraPS {
 
         # Generic catch-all. This will throw an exception if we forgot to mock something.
         Mock Invoke-JiraMethod -ModuleName JiraPS {
-            ShowMockInfo 'Invoke-JiraMethod' -Params 'Uri','Method'
+            ShowMockInfo 'Invoke-JiraMethod' -Params 'Uri', 'Method'
             throw "Unidentified call to Invoke-JiraMethod"
         }
 
@@ -82,7 +80,7 @@ InModuleScope JiraPS {
                 # Normally, this would be called once in Get-JiraIssue and a second time in Get-JiraIssueWatcher, but
                 # since we've mocked Get-JiraIssue out, it will only be called once.
                 Assert-MockCalled -CommandName Invoke-JiraMethod -ModuleName JiraPS -Exactly -Times 1 -Scope It
-        }
+            }
 
             It "Obtains all Jira watchers from a Jira issue if the Jira object is provided" {
                 $issue = Get-JiraIssue -Key $issueKey
@@ -97,6 +95,11 @@ InModuleScope JiraPS {
                 $watchers | Should Not BeNullOrEmpty
                 $watchers.name | Should Be "fred"
                 Assert-MockCalled -CommandName Invoke-JiraMethod -ModuleName JiraPS -Exactly -Times 1 -Scope It
+            }
+
+            It "Passes the -ServerName parameter to Get-JiraIssue if specified" {
+                Get-JiraIssueWatcher -Issue $issueKey -ServerName 'testServer'
+                Assert-MockCalled -CommandName Get-JiraIssue -ParameterFilter {$ServerName -eq 'testServer'}
             }
         }
     }

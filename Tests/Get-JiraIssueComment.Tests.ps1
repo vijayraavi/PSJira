@@ -2,15 +2,15 @@
 
 
 InModuleScope JiraPS {
-    [System.Diagnostics.CodeAnalysis.SuppressMessage('PSUseDeclaredVarsMoreThanAssigments', '', Scope='*', Target='SuppressImportModule')]
+    [System.Diagnostics.CodeAnalysis.SuppressMessage('PSUseDeclaredVarsMoreThanAssigments', '', Scope = '*', Target = 'SuppressImportModule')]
     $SuppressImportModule = $true
     . $PSScriptRoot\Shared.ps1
 
     Describe "Get-JiraIssueComment" {
 
         $jiraServer = 'http://jiraserver.example.com'
-        $issueID = 41701
-        $issueKey = 'IT-3676'
+        $issueID = 12345
+        $issueKey = 'TEST-1'
 
         $restResult = @"
 {
@@ -32,26 +32,29 @@ InModuleScope JiraPS {
   ]
 }
 "@
-        Mock Get-JiraConfigServer -ModuleName JiraPS {
-            Write-Output $jiraServer
+
+        if ($ShowDebugData) {
+            Mock Write-Debug {
+                Write-Host -Object "[DEBUG] $Message" -ForegroundColor Yellow
+            }
         }
 
-        Mock Get-JiraIssue -ModuleName JiraPS {
+        Mock Get-JiraIssue {
             [PSCustomObject] @{
-                ID = $issueID;
-                Key = $issueKey;
+                ID      = $issueID;
+                Key     = $issueKey;
                 RestUrl = "$jiraServer/rest/api/latest/issue/$issueID";
             }
         }
 
-        # Obtaining comments from an issue...this is IT-3676 in the test environment
-        Mock Invoke-JiraMethod -ModuleName JiraPS -ParameterFilter {$Method -eq 'Get' -and $URI -eq "$jiraServer/rest/api/latest/issue/$issueID/comment"} {
-            if ($ShowMockData)
-            {
-                Write-Host "       Mocked Invoke-JiraMethod with GET method" -ForegroundColor Cyan
-                Write-Host "         [Method] $Method" -ForegroundColor Cyan
-                Write-Host "         [URI]    $URI" -ForegroundColor Cyan
-            }
+        # Obtaining comments from an issue
+        Mock Invoke-JiraMethod -ParameterFilter {$Method -eq 'Get' -and $URI -eq "/rest/api/latest/issue/$issueID/comment"} {
+            ShowMockInfo 'Invoke-JiraMethod' -Params 'Method', 'Uri', 'ServerName'
+            # if ($ShowMockData) {
+            #     Write-Host "       Mocked Invoke-JiraMethod with GET method" -ForegroundColor Cyan
+            #     Write-Host "         [Method] $Method" -ForegroundColor Cyan
+            #     Write-Host "         [URI]    $URI" -ForegroundColor Cyan
+            # }
             ConvertFrom-Json2 -InputObject $restResult
         }
 
@@ -62,10 +65,6 @@ InModuleScope JiraPS {
             Write-Host "         [URI]            $URI" -ForegroundColor DarkRed
             throw "Unidentified call to Invoke-JiraMethod"
         }
-
-#        Mock Write-Debug {
-#            Write-Host "DEBUG: $Message" -ForegroundColor Yellow
-#        }
 
         #############
         # Tests
@@ -100,6 +99,11 @@ InModuleScope JiraPS {
             $comments | Should Not BeNullOrEmpty
             $comments.ID | Should Be 90730
             Assert-MockCalled -CommandName Invoke-JiraMethod -ModuleName JiraPS -Exactly -Times 1 -Scope It
+        }
+
+        It "Passes the -ServerName parameter to Get-JiraIssue if specified" {
+            Get-JiraIssueComment -Issue $issueKey -ServerName 'testServer' | Out-Null
+            Assert-MockCalled -CommandName Invoke-JiraMethod -ParameterFilter {$ServerName -eq 'testServer'}
         }
     }
 }

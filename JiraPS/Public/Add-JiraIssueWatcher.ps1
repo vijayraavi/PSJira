@@ -1,5 +1,4 @@
-﻿function Add-JiraIssueWatcher
-{
+﻿function Add-JiraIssueWatcher {
     <#
     .Synopsis
        Adds a watcher to an existing JIRA issue
@@ -25,32 +24,30 @@
     param(
         # Watcher that should be added to JIRA
         [Parameter(Mandatory = $true,
-                   Position = 0)]
+            Position = 0)]
         [string[]] $Watcher,
 
         # Issue that should be watched
         [Parameter(Mandatory = $true,
-                   Position = 1,
-                   ValueFromPipeline = $true,
-                   ValueFromPipelineByPropertyName = $true)]
+            Position = 1,
+            ValueFromPipeline = $true,
+            ValueFromPipelineByPropertyName = $true)]
         [Alias('Key')]
         [Object] $Issue,
+
+        # Server name from the module config to connect to.
+        # If not specified, the default server will be used.
+        [Parameter(Mandatory = $false)]
+        [String] $ServerName,
 
         # Credentials to use to connect to Jira. If not specified, this function will use
         [Parameter(Mandatory = $false)]
         [System.Management.Automation.PSCredential] $Credential
     )
 
-    begin
-    {
-        Write-Debug "[Add-JiraIssueWatcher] Begin"
-        # We can't validate pipeline input here, since pipeline input doesn't exist in the Begin block.
-    }
-
-    process
-    {
+    process {
         Write-Debug "[Add-JiraIssueWatcher] Obtaining a reference to Jira issue [$Issue]"
-        $issueObj = Get-JiraIssue -InputObject $Issue -Credential $Credential
+        $issueObj = Get-JiraIssue -InputObject $Issue -ServerName $ServerName -Credential $Credential
 
         $url = "$($issueObj.RestURL)/watchers"
 
@@ -62,8 +59,7 @@
         }
     }
 
-    end
-    {
+    end {
         Write-Debug "[Add-JiraIssueWatcher] Complete"
     }
 }

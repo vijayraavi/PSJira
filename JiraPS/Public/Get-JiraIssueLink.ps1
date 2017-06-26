@@ -32,16 +32,18 @@ function Get-JiraIssueLink {
         )]
         [Int[]] $Id,
 
+        # Server name from the module config to connect to.
+        # If not specified, the default server will be used.
+        [Parameter(Mandatory = $false)]
+        [String] $ServerName,
+
         # Credentials to use to connect to Jira
         [Parameter(Mandatory = $false)]
         [System.Management.Automation.PSCredential] $Credential
     )
 
     begin {
-        Write-Debug "[Get-JiraIssueLink] Reading server from config file"
-        $server = Get-JiraConfigServer -ConfigFile $ConfigFile -ErrorAction Stop
-
-        $uri = "$server/rest/api/2/issueLink/{0}"
+        $uri = "/rest/api/2/issueLink/{0}"
     }
 
     process {
@@ -58,7 +60,7 @@ function Get-JiraIssueLink {
 
             Write-Debug "[Get-JiraIssueLink] Preparing for blastoff!"
 
-            $result = Invoke-JiraMethod -Method Get -URI $thisUri -Credential $Credential
+            $result = Invoke-JiraMethod -Method Get -URI $thisUri -ServerName $ServerName -Credential $Credential
             if ($result) {
                 Write-Debug "[Get-JiraIssueLink] Converting to object"
                 $obj = ConvertTo-JiraIssueLink -InputObject $result
@@ -67,7 +69,6 @@ function Get-JiraIssueLink {
                 Write-Output $obj
             }
             else {
-                Write-Debug "[Get-JiraIssueLink] No results were returned from Jira"
                 Write-Debug "[Get-JiraIssueLink] No results were returned from Jira for project [$ilink]"
             }
         }

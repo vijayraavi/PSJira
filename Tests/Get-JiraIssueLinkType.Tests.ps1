@@ -10,10 +10,6 @@ InModuleScope JiraPS {
 
     Describe 'Get-JiraIssueLinkType' {
 
-        Mock Get-JiraConfigServer -ModuleName JiraPS {
-            Write-Output $jiraServer
-        }
-
         Context "Sanity checking" {
             $command = Get-Command -Name Get-JiraIssueLinkType
 
@@ -21,11 +17,11 @@ InModuleScope JiraPS {
             defParam $command 'Credential'
         }
 
-        $filterAll = {$Method -eq 'Get' -and $Uri -ceq "$jiraServer/rest/api/latest/issueLinkType"}
-        $filterOne = {$Method -eq 'Get' -and $Uri -ceq "$jiraServer/rest/api/latest/issueLinkType/10000"}
+        $filterAll = {$Method -eq 'Get' -and $Uri -ceq "/rest/api/latest/issueLinkType"}
+        $filterOne = {$Method -eq 'Get' -and $Uri -ceq "/rest/api/latest/issueLinkType/10000"}
 
         # Generic catch-all. This will throw an exception if we forgot to mock something.
-        Mock Invoke-JiraMethod -ModuleName JiraPS {
+        Mock Invoke-JiraMethod {
             ShowMockInfo 'Invoke-JiraMethod' 'Method', 'Uri'
             throw "Unidentified call to Invoke-JiraMethod"
         }
@@ -67,12 +63,20 @@ InModuleScope JiraPS {
                 Assert-MockCalled -CommandName Invoke-JiraMethod -ParameterFilter $filterAll -Exactly -Times 1 -Scope Context
             }
 
+
             It 'Returns all link types if no value is passed to the -LinkType parameter' {
                 $output | Should Not BeNullOrEmpty
             }
 
             It 'Uses the helper method ConvertTo-JiraIssueLinkType to process output' {
+                # Watch the order of this test - the test below with the -ServerName
+                # param will call the mock a second time
                 Assert-MockCalled -CommandName ConvertTo-JiraIssueLinkType -ParameterFilter {$InputObject -contains 'foo'} -Exactly -Times 1 -Scope Context
+            }
+
+            It "Passes the -ServerName parameter to Invoke-JiraMethod if specified" {
+                Get-JiraIssueLinkType -ServerName 'testServer' | Out-Null
+                Assert-MockCalled -CommandName Invoke-JiraMethod -ParameterFilter {$ServerName -eq 'testServer'}
             }
         }
 

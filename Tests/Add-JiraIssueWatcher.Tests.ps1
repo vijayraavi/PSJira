@@ -2,34 +2,31 @@
 
 InModuleScope JiraPS {
 
-    [System.Diagnostics.CodeAnalysis.SuppressMessage('PSUseDeclaredVarsMoreThanAssigments', '', Scope='*', Target='SuppressImportModule')]
+    [System.Diagnostics.CodeAnalysis.SuppressMessage('PSUseDeclaredVarsMoreThanAssigments', '', Scope = '*', Target = 'SuppressImportModule')]
     $SuppressImportModule = $true
     . $PSScriptRoot\Shared.ps1
 
     $jiraServer = 'http://jiraserver.example.com'
-    $issueID = 41701
-    $issueKey = 'IT-3676'
+    $issueID = 12345
+    $issueKey = 'TEST-1'
 
     Describe "Add-JiraIssueWatcher" {
 
-        Mock Get-JiraConfigServer -ModuleName JiraPS {
-            Write-Output $jiraServer
-        }
-
-        Mock Get-JiraIssue -ModuleName JiraPS {
+        Mock Get-JiraIssue {
+            ShowMockInfo 'Get-JiraIssue' 'InputObject', 'ServerName'
             [PSCustomObject] @{
                 ID      = $issueID;
-                Key = $issueKey;
+                Key     = $issueKey;
                 RestUrl = "$jiraServer/rest/api/latest/issue/$issueID";
             }
         }
 
-        Mock Invoke-JiraMethod -ModuleName JiraPS -ParameterFilter {$Method -eq 'POST' -and $URI -eq "$jiraServer/rest/api/latest/issue/$issueID/watchers"} {
+        Mock Invoke-JiraMethod -ParameterFilter {$Method -eq 'POST' -and $URI -eq "$jiraServer/rest/api/latest/issue/$issueID/watchers"} {
             ShowMockInfo 'Invoke-JiraMethod' -Params 'Uri', 'Method'
         }
 
         # Generic catch-all. This will throw an exception if we forgot to mock something.
-        Mock Invoke-JiraMethod -ModuleName JiraPS {
+        Mock Invoke-JiraMethod {
             ShowMockInfo 'Invoke-JiraMethod' -Params 'Uri', 'Method'
             throw "Unidentified call to Invoke-JiraMethod"
         }
@@ -53,10 +50,10 @@ InModuleScope JiraPS {
                 $WatcherResult | Should BeNullOrEmpty
 
                 # Get-JiraIssue should be used to identify the issue parameter
-                Assert-MockCalled -CommandName Get-JiraIssue -ModuleName JiraPS -Exactly -Times 1 -Scope It
+                Assert-MockCalled -CommandName Get-JiraIssue -Exactly -Times 1 -Scope It
 
                 # Invoke-JiraMethod should be used to add the Watcher
-                Assert-MockCalled -CommandName Invoke-JiraMethod -ModuleName JiraPS -Exactly -Times 1 -Scope It
+                Assert-MockCalled -CommandName Invoke-JiraMethod -Exactly -Times 1 -Scope It
             }
 
             It "Accepts pipeline input from Get-JiraIssue" {
@@ -64,8 +61,13 @@ InModuleScope JiraPS {
                 $WatcherResult | Should BeNullOrEmpty
 
                 # Get-JiraIssue should be called once here, and once inside Add-JiraIssueWatcher (to identify the InputObject parameter)
-            Assert-MockCalled -CommandName Get-JiraIssue -ModuleName JiraPS -Exactly -Times 2 -Scope It
-                Assert-MockCalled -CommandName Invoke-JiraMethod -ModuleName JiraPS -Exactly -Times 1 -Scope It
+                Assert-MockCalled -CommandName Get-JiraIssue -Exactly -Times 2 -Scope It
+                Assert-MockCalled -CommandName Invoke-JiraMethod -Exactly -Times 1 -Scope It
+            }
+
+            It "Passes the -ServerName parameter to Get-JiraIssue if specified" {
+                Add-JiraIssueWatcher -Watcher 'fred' -Issue $issueKey -ServerName 'testServer' | Out-Null
+                Assert-MockCalled -CommandName Get-JiraIssue -ParameterFilter {$ServerName -eq 'testServer'}
             }
         }
     }

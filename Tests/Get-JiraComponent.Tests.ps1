@@ -2,7 +2,7 @@
 
 InModuleScope JiraPS {
 
-    [System.Diagnostics.CodeAnalysis.SuppressMessage('PSUseDeclaredVarsMoreThanAssigments', '', Scope='*', Target='SuppressImportModule')]
+    [System.Diagnostics.CodeAnalysis.SuppressMessage('PSUseDeclaredVarsMoreThanAssigments', '', Scope = '*', Target = 'SuppressImportModule')]
     $SuppressImportModule = $true
     . $PSScriptRoot\Shared.ps1
 
@@ -49,11 +49,8 @@ InModuleScope JiraPS {
 "@
 
     Describe "Get-JiraComponent" {
-        Mock Get-JiraConfigServer -ModuleName JiraPS {
-            Write-Output $jiraServer
-        }
 
-        Mock Invoke-JiraMethod -ModuleName JiraPS -ParameterFilter {$Method -eq 'Get' -and $URI -eq "$jiraServer/rest/api/latest/component/${componentId}"} {
+        Mock Invoke-JiraMethod -ParameterFilter {$Method -eq 'Get' -and $URI -eq "/rest/api/latest/component/${componentId}"} {
             ConvertFrom-Json2 $restResultOne
         }
 
@@ -64,10 +61,6 @@ InModuleScope JiraPS {
             Write-Host "         [URI]            $URI" -ForegroundColor DarkRed
             throw "Unidentified call to Invoke-JiraMethod"
         }
-
-#        Mock Write-Debug {
-#            Write-Host "DEBUG: $Message" -ForegroundColor Yellow
-#        }
 
         #############
         # Tests
@@ -85,7 +78,10 @@ InModuleScope JiraPS {
             $oneResult.Id | Should Be $componentId
         }
 
-
+        It "Passes the -ServerName parameter to Invoke-JiraMethod if specified" {
+            Get-JiraComponent -Id $componentId -ServerName 'testServer' | Out-Null
+            Assert-MockCalled -CommandName Invoke-JiraMethod -ParameterFilter {$ServerName -eq 'testServer'}
+        }
     }
 }
 

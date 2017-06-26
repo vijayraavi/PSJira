@@ -1,5 +1,4 @@
-function Get-JiraIssueCreateMetadata
-{
+function Get-JiraIssueCreateMetadata {
     <#
     .Synopsis
        Returns metadata required to create an issue in JIRA
@@ -32,8 +31,10 @@ function Get-JiraIssueCreateMetadata
             Position = 1)]
         [String] $IssueType,
 
-        # Path of the file with the configuration.
-        [String] $ConfigFile,
+        # Server name from the module config to connect to.
+        # If not specified, the default server will be used.
+        [Parameter(Mandatory = $false)]
+        [String] $ServerName,
 
         # Credentials to use to connect to JIRA.
         # If not specified, this function will use anonymous access.
@@ -41,63 +42,43 @@ function Get-JiraIssueCreateMetadata
         [System.Management.Automation.PSCredential] $Credential
     )
 
-    begin
-    {
-        Write-Debug "[Get-JiraIssueCreateMetadata] Reading server from config file"
-        try
-        {
-            $server = Get-JiraConfigServer -ConfigFile $ConfigFile -ErrorAction Stop
-        } catch
-        {
-            $err = $_
-            Write-Debug "[Get-JiraIssueCreateMetadata] Encountered an error reading the Jira server."
-            throw $err
-        }
-
+    begin {
         Write-Debug "[Get-JiraIssueCreateMetadata] Building URI for REST call based on parameters"
-        $uri = "$server/rest/api/latest/issue/createmeta?"
+        $uri = "/rest/api/latest/issue/createmeta?"
 
         Write-Debug "[Get-JiraIssueCreateMetadata] Obtaining project ID for project [$Project]"
         $projectObj = Get-JiraProject -Project $Project -Credential $Credential
-        if ($projectObj)
-        {
+        if ($projectObj) {
             $projectId = $projectObj.Id
             $uri = "${uri}projectIds=$projectId&"
         }
-        else
-        {
+        else {
             throw "No project was found for the given Project [$Project]. Use Get-JiraProject for more information on this issue."
         }
 
         Write-Debug "[Get-JiraIssueCreateMetadata] Obtaining issue type ID for issue type [$IssueType]"
         $issueTypeObj = Get-JiraIssueType -IssueType $IssueType -Credential $Credential
-        if ($issueTypeObj)
-        {
+        if ($issueTypeObj) {
             $issueTypeId = $issueTypeObj.Id
             $uri = "${uri}issuetypeIds=$issueTypeId&"
         }
-        else
-        {
+        else {
             throw "No issue types were found for the given IssueType [$IssueType]. Use Get-JiraIssueType for more information on this issue."
         }
 
         $uri = "${uri}expand=projects.issuetypes.fields"
     }
 
-    process
-    {
+    process {
         Write-Debug "[Get-JiraIssueCreateMetadata] Preparing for blastoff!"
-        $jiraResult = Invoke-JiraMethod -Method Get -URI $uri -Credential $Credential
+        $jiraResult = Invoke-JiraMethod -Method Get -URI $uri -ServerName $ServerName -Credential $Credential
 
-        if ($jiraResult)
-        {
-            if (@($jiraResult.projects).Count -eq 0)
-            {
+        if ($jiraResult) {
+            if (@($jiraResult.projects).Count -eq 0) {
                 Write-Debug "[Get-JiraIssueCreateMetadata] No project results were found. Throwing exception."
                 throw "No projects were found for the given project [$Project]. Use Get-JiraProject for more details."
             }
-            elseif (@($jiraResult.projects).Count -gt 1)
-            {
+            elseif (@($jiraResult.projects).Count -gt 1) {
                 Write-Debug "[Get-JiraIssueCreateMetadata] Multiple project results were found. Throwing exception."
                 throw "Multiple projects were found for the given project [$Project]. Refine the parameters to return only one project."
             }
@@ -107,13 +88,11 @@ function Get-JiraIssueCreateMetadata
 
             Write-Debug "[Get-JiraIssueCreateMetadata] Identified project key: [$Project]"
 
-            if (@($jiraResult.projects.issuetypes) -eq 0)
-            {
+            if (@($jiraResult.projects.issuetypes) -eq 0) {
                 Write-Debug "[Get-JiraIssueCreateMetadata] No issue type results were found. Throwing exception."
                 throw "No issue types were found for the given issue type [$IssueType]. Use Get-JiraIssueType for more details."
             }
-            elseif (@($jiraResult.projects.issuetypes).Count -gt 1)
-            {
+            elseif (@($jiraResult.projects.issuetypes).Count -gt 1) {
                 Write-Debug "[Get-JiraIssueCreateMetadata] Multiple issue type results were found. Throwing exception."
                 throw "Multiple issue types were found for the given issue type [$IssueType]. Refine the parameters to return only one issue type."
             }
@@ -123,11 +102,8 @@ function Get-JiraIssueCreateMetadata
 
             Write-Debug "Outputting results"
             Write-Output $obj
-
-            #            Write-Output $jiraResult
         }
-        else
-        {
+        else {
             Write-Debug "[Get-JiraIssueCreateMetadata] No results were returned from JIRA."
         }
     }

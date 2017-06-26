@@ -1,5 +1,4 @@
-function Get-JiraGroupMember
-{
+function Get-JiraGroupMember {
     <#
     .Synopsis
        Returns members of a given group in JIRA
@@ -48,44 +47,41 @@ function Get-JiraGroupMember
         [ValidateRange(0, [Int]::MaxValue)]
         [Int] $MaxResults = 0,
 
+        # Server name from the module config to connect to.
+        # If not specified, the default server will be used.
+        [Parameter(Mandatory = $false)]
+        [String] $ServerName,
+
         # Credentials to use to connect to JIRA.
         # If not specified, this function will use anonymous access.
         [Parameter(Mandatory = $false)]
         [System.Management.Automation.PSCredential] $Credential
     )
 
-    begin
-    {
+    begin {
         # This is a parameter in Get-JiraIssue, but in testing, JIRA doesn't
         # reliably return more than 50 results at a time.
         $pageSize = 50
 
-        if ($MaxResults -eq 0)
-        {
+        if ($MaxResults -eq 0) {
             Write-Debug "[Get-JiraGroupMember] MaxResults was not specified. Using loop mode to obtain all members."
             $loopMode = $true
         }
-        else
-        {
+        else {
             $loopMode = $false
-            if ($MaxResults -gt 50)
-            {
+            if ($MaxResults -gt 50) {
                 Write-Warning "JIRA's API may not properly support MaxResults values higher than 50 for this method. If you receive inconsistent results, do not pass the MaxResults parameter to this function to return all results."
             }
         }
     }
 
-    process
-    {
+    process {
         Write-Debug "[Get-JiraGroupMember] Obtaining a reference to Jira group [$Group]"
-        $groupObj = Get-JiraGroup -GroupName $Group -Credential $Credential
+        $groupObj = Get-JiraGroup -GroupName $Group -ServerName $ServerName -Credential $Credential
 
-        if ($groupObj)
-        {
-            foreach ($g in $groupObj)
-            {
-                if ($loopMode)
-                {
+        if ($groupObj) {
+            foreach ($g in $groupObj) {
+                if ($loopMode) {
                     # Using the Size property of the group object, iterate
                     # through all users in a given group.
 
@@ -93,22 +89,18 @@ function Get-JiraGroupMember
                     $allUsers = New-Object -TypeName System.Collections.ArrayList
                     Write-Debug "[Get-JiraGroupMember] Paging through all results (loop mode)"
 
-                    for ($i = 0; $i -lt $totalResults; $i = $i + $PageSize)
-                    {
-                        if ($PageSize -gt ($i + $totalResults))
-                        {
+                    for ($i = 0; $i -lt $totalResults; $i = $i + $PageSize) {
+                        if ($PageSize -gt ($i + $totalResults)) {
                             $thisPageSize = $totalResults - $i
                         }
-                        else
-                        {
+                        else {
                             $thisPageSize = $PageSize
                         }
                         $percentComplete = ($i / $totalResults) * 100
                         Write-Progress -Activity 'Get-JiraGroupMember' -Status "Obtaining members ($i - $($i + $thisPageSize) of $totalResults)..." -PercentComplete $percentComplete
                         Write-Debug "[Get-JiraGroupMember] Obtaining members $i - $($i + $thisPageSize)..."
-                        $thisSection = Get-JiraGroupMember -Group $g -StartIndex $i -MaxResults $thisPageSize -Credential $Credential
-                        foreach ($t in $thisSection)
-                        {
+                        $thisSection = Get-JiraGroupMember -Group $g -StartIndex $i -MaxResults $thisPageSize -ServerName $ServerName -Credential $Credential
+                        foreach ($t in $thisSection) {
                             [void] $allUsers.Add($t)
                         }
                     }
@@ -117,8 +109,7 @@ function Get-JiraGroupMember
                     Write-Output ($allUsers.ToArray())
 
                 }
-                else
-                {
+                else {
                     # Since user is an expandable property of the returned
                     # group from JIRA, JIRA doesn't use the MaxResults argument
                     # found in other REST endpoints.  Instead, we need to pass
@@ -126,10 +117,9 @@ function Get-JiraGroupMember
                     $url = '{0}&expand=users[{1}:{2}]' -f $g.RestUrl, $StartIndex, ($StartIndex + $MaxResults)
 
                     Write-Debug "[Get-JiraGroupMember] Preparing for blastoff!"
-                    $groupResult = Invoke-JiraMethod -Method Get -URI $url -Credential $Credential
+                    $groupResult = Invoke-JiraMethod -Method Get -URI $url -ServerName $ServerName -Credential $Credential
 
-                    if ($groupResult)
-                    {
+                    if ($groupResult) {
                         # ConvertTo-JiraGroup contains logic to convert and add
                         # users (group members) to user objects if the members
                         # are returned from JIRA.
@@ -140,8 +130,7 @@ function Get-JiraGroupMember
                         Write-Debug "[Get-JiraGroupMember] Outputting group members"
                         Write-Output $groupObjResult.Member
                     }
-                    else
-                    {
+                    else {
                         # Something is wrong here...we didn't get back a result from JIRA when we *did* get a
                         # valid group from Get-JiraGroup earlier.
                         Write-Warning "A JIRA group could not be found at URL [$url], even though this seems to be a valid group."
@@ -149,8 +138,7 @@ function Get-JiraGroupMember
                 }
             }
         }
-        else
-        {
+        else {
             throw "Unable to identify group [$Group]. Use Get-JiraGroup to make sure this is a valid JIRA group."
         }
     }

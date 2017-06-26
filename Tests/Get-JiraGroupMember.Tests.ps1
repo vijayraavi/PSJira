@@ -2,20 +2,15 @@
 
 InModuleScope JiraPS {
 
-    [System.Diagnostics.CodeAnalysis.SuppressMessage('PSUseDeclaredVarsMoreThanAssigments', '', Scope='*', Target='SuppressImportModule')]
+    [System.Diagnostics.CodeAnalysis.SuppressMessage('PSUseDeclaredVarsMoreThanAssigments', '', Scope = '*', Target = 'SuppressImportModule')]
     $SuppressImportModule = $true
     . $PSScriptRoot\Shared.ps1
 
     Describe "Get-JiraGroupMember" {
-        if ($ShowDebugText)
-        {
+        if ($ShowDebugText) {
             Mock "Write-Debug" {
                 Write-Host "       [DEBUG] $Message" -ForegroundColor Yellow
             }
-        }
-
-        Mock Get-JiraConfigServer {
-            'https://jira.example.com'
         }
 
         # If we don't override this in a context or test, we don't want it to
@@ -34,9 +29,9 @@ InModuleScope JiraPS {
 
         Mock Get-JiraGroup -ModuleName JiraPS {
             $obj = [PSCustomObject] @{
-                'Name' = 'testgroup'
+                'Name'    = 'testgroup'
                 'RestUrl' = 'https://jira.example.com/rest/api/2/group?groupname=testgroup'
-                'Size' = 2
+                'Size'    = 2
             }
             $obj.PSObject.TypeNames.Insert(0, 'JiraPS.Group')
             Write-Output $obj
@@ -45,8 +40,7 @@ InModuleScope JiraPS {
         Context "Sanity checking" {
             $command = Get-Command -Name Get-JiraGroupMember
 
-            function defParam($name)
-            {
+            function defParam($name) {
                 It "Has a -$name parameter" {
                     $command.Parameters.Item($name) | Should Not BeNullOrEmpty
                 }
@@ -59,17 +53,17 @@ InModuleScope JiraPS {
         }
 
         Context "Behavior testing" {
-            Mock Invoke-JiraMethod -ModuleName JiraPS {
-                if ($ShowMockData)
-                {
-                    Write-Host "       Mocked Invoke-JiraMethod" -ForegroundColor Cyan
-                    Write-Host "         [Uri]     $Uri" -ForegroundColor Cyan
-                    Write-Host "         [Method]  $Method" -ForegroundColor Cyan
-#                    Write-Host "         [Body]    $Body" -ForegroundColor Cyan
-                }
+            Mock Invoke-JiraMethod {
+                ShowMockInfo 'Invoke-JiraMethod' 'Uri', 'Method', 'ServerName'
+                # if ($ShowMockData) {
+                #     Write-Host "       Mocked Invoke-JiraMethod" -ForegroundColor Cyan
+                #     Write-Host "         [Uri]     $Uri" -ForegroundColor Cyan
+                #     Write-Host "         [Method]  $Method" -ForegroundColor Cyan
+                #     #                    Write-Host "         [Body]    $Body" -ForegroundColor Cyan
+                # }
             }
 
-            Mock Get-JiraUser -ModuleName JiraPS {
+            Mock Get-JiraUser {
                 [PSCustomObject] @{
                     'Name' = 'username'
                 }
@@ -78,6 +72,11 @@ InModuleScope JiraPS {
             It "Obtains members about a provided group in JIRA" {
                 { Get-JiraGroupMember -Group testgroup } | Should Not Throw
                 Assert-MockCalled -CommandName Invoke-JiraMethod -ModuleName JiraPS -Exactly -Times 1 -Scope It -ParameterFilter { $Method -eq 'Get' -and $URI -like '*/rest/api/*/group?groupname=testgroup&expand=users*' }
+            }
+
+            It "Passes the -ServerName parameter to Invoke-JiraMethod if specified" {
+                Get-JiraGroupMember -Group testgroup -ServerName 'testServer' | Out-Null
+                Assert-MockCalled -CommandName Invoke-JiraMethod -ParameterFilter {$ServerName -eq 'testServer'}
             }
 
             It "Supports the -StartIndex and -MaxResults parameters to page through search results" {
@@ -94,8 +93,7 @@ InModuleScope JiraPS {
                 # mock that actually returns some data.
 
                 Mock Invoke-JiraMethod -ModuleName JiraPS {
-                    if ($ShowMockData)
-                    {
+                    if ($ShowMockData) {
                         Write-Host "       Mocked Invoke-JiraMethod" -ForegroundColor Cyan
                         Write-Host "         [Uri]     $Uri" -ForegroundColor Cyan
                         Write-Host "         [Method]  $Method" -ForegroundColor Cyan
