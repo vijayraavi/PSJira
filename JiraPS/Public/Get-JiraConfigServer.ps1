@@ -8,20 +8,20 @@ function Get-JiraConfigServer {
 
         [Parameter(ParameterSetName = 'ReturnAll',
             Mandatory)]
-        [Switch] $All
+        [Switch] $Default
     )
 
     process {
         $servers = (Get-JiraConfig).Servers
 
-        if ($All) {
-            $servers | Write-Output
+        if ($Default) {
+            $servers | Where-Object {$_.Default} | Write-Output
         }
         elseif ($ServerName) {
             $servers | Where-Object {$_.Name -like $ServerName} | Write-Output
         }
         else {
-            $servers | Where-Object {$_.Default} | Write-Output
+            $servers | Write-Output
         }
     }
 }

@@ -47,7 +47,7 @@ function Invoke-JiraMethod {
         }
         else {
             Write-Debug "[Invoke-JiraMethod] Getting default server from config file"
-            $serverObj = Get-JiraConfigServer
+            $serverObj = Get-JiraConfigServer -Default
             if (-not $serverObj) {
                 throw 'A server does not exist in the configuration file. Use Add-JiraConfigServer to define a server.'
             }

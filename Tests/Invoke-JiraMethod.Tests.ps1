@@ -15,8 +15,8 @@ InModuleScope JiraPS {
 
     Describe "Invoke-JiraMethod" {
 
-        Mock Write-Debug {
-            if ($ShowDebugText) {
+        if ($ShowDebugText) {
+            Mock Write-Debug {
                 Write-Host -Object "[DEBUG] $Message" -ForegroundColor Yellow
             }
         }
@@ -109,7 +109,7 @@ InModuleScope JiraPS {
 
             It "When a partial URL is provided and -ServerName is not specified, it uses Get-JiraConfigServer to get the default server URL" {
                 Invoke-JiraMethod -Method Get -URI $testUri | Out-Null
-                Assert-MockCalled Get-JiraConfigServer -Scope It -ExclusiveFilter {$ServerName -eq $null}
+                Assert-MockCalled Get-JiraConfigServer -Scope It -ExclusiveFilter {$ServerName -eq $null -and $Default -eq $true}
             }
 
             It "When a partial URL is provided and -ServerName is specified, it uses Get-JiraConfigServer to get a named server instance" {
@@ -142,7 +142,6 @@ InModuleScope JiraPS {
 
             It 'When a full URL is provided and a default server does not exist, it does not throw an exception' {
                 { Invoke-JiraMethod -Method Get -URI $testFullUri } | Should Not Throw
-
             }
         }
 
