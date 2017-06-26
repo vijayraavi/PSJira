@@ -32,26 +32,33 @@ function Invoke-JiraMethod {
 
     $headers = @{}
 
-    if ($ServerName) {
-        Write-Debug "[Invoke-JiraMethod] Resolving server [$ServerName] from config file"
-        $serverObj = Get-JiraConfigServer -ServerName $ServerName
-        if (-not $serverObj) {
-            throw "Server $ServerName does not exist in the configuration file. Use Add-JiraConfigServer to define this server."
-        }
+    if ($URI -match '^http[s]?://') {
+        Write-Debug "[Invoke-JiraMethod] A full URI was provided"
+        $fullUri = $URI
     }
     else {
-        Write-Debug "[Invoke-JiraMethod] Getting default server from config file"
-        $serverObj = Get-JiraConfigServer
-        if (-not $serverObj) {
-            throw 'A server does not exist in the configuration file. Use Add-JiraConfigServer to define a server.'
+        Write-Debug "[Invoke-JiraMethod] A partial URI was provided; resolving"
+        if ($ServerName) {
+            Write-Debug "[Invoke-JiraMethod] Resolving server [$ServerName] from config file"
+            $serverObj = Get-JiraConfigServer -ServerName $ServerName
+            if (-not $serverObj) {
+                throw "Server $ServerName does not exist in the configuration file. Use Add-JiraConfigServer to define this server."
+            }
         }
-    }
+        else {
+            Write-Debug "[Invoke-JiraMethod] Getting default server from config file"
+            $serverObj = Get-JiraConfigServer
+            if (-not $serverObj) {
+                throw 'A server does not exist in the configuration file. Use Add-JiraConfigServer to define a server.'
+            }
+        }
 
-    if ($URI.StartsWith('/')) {
-        $fullUri = "$($serverObj.Url)$URI"
-    }
-    else {
-        $fullUri = "$($serverObj.Url)/$URI"
+        if ($URI.StartsWith('/')) {
+            $fullUri = "$($serverObj.Url)$URI"
+        }
+        else {
+            $fullUri = "$($serverObj.Url)/$URI"
+        }
     }
 
     if ($Credential) {

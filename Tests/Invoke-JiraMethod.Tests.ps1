@@ -15,6 +15,12 @@ InModuleScope JiraPS {
 
     Describe "Invoke-JiraMethod" {
 
+        Mock Write-Debug {
+            if ($ShowDebugText) {
+                Write-Host -Object "[DEBUG] $Message" -ForegroundColor Yellow
+            }
+        }
+
         Mock Get-JiraConfigServer {
             ShowMockInfo 'Get-JiraConfigServer' -Params ServerName
             [PSCustomObject] @{
@@ -41,8 +47,8 @@ InModuleScope JiraPS {
 
         Context "Behavior testing" {
 
-            # $testUri = 'http://example.com'
             $testUri = '/api/2/fake'
+            $testFullUri = "http://example.com/$testUri"
             $testUsername = 'testUsername'
             $testPassword = 'password123'
             $testCred = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList $testUsername, (ConvertTo-SecureString -AsPlainText -Force $testPassword)
@@ -95,17 +101,23 @@ InModuleScope JiraPS {
                 }
             }
 
-            It "Uses Get-JiraConfigServer to get the default server when -ServerName is not specified" {
+            It "When a a full URL is provided to the -URI parameter, it calls this URL and does not read the config file" {
+                Invoke-JiraMethod -Method Get -URI $testFullUri | Out-Null
+                Assert-MockCalled Get-JiraConfigServer -Scope It -Exactly -Times 0
+                Assert-MockCalled Invoke-WebRequest -ParameterFilter {$Uri -eq $testFullUri} -Scope It
+            }
+
+            It "When a partial URL is provided and -ServerName is not specified, it uses Get-JiraConfigServer to get the default server URL" {
                 Invoke-JiraMethod -Method Get -URI $testUri | Out-Null
                 Assert-MockCalled Get-JiraConfigServer -Scope It -ExclusiveFilter {$ServerName -eq $null}
             }
 
-            It "Uses Get-JiraConfigServer to get a named server instance when -ServerName is specified" {
+            It "When a partial URL is provided and -ServerName is specified, it uses Get-JiraConfigServer to get a named server instance" {
                 Invoke-JiraMethod -Method Get -URI $testUri -ServerName 'RealServer' | Out-Null
                 Assert-MockCalled Get-JiraConfigServer -Scope It -ExclusiveFilter {$ServerName -eq 'RealServer'}
             }
 
-            It 'Calls Invoke-WebRequest on the URL from Get-JiraConfigServer' {
+            It 'When a partial URL is provided, it calls Invoke-WebRequest on the URL from Get-JiraConfigServer' {
                 Invoke-JiraMethod -Method Get -URI 'api/2/fake' -ServerName 'RealServer' | Out-Null
                 Assert-MockCalled Invoke-WebRequest -Scope It -ExclusiveFilter {$Uri -eq 'http://a.real.url/api/2/fake'}
             }
@@ -120,12 +132,17 @@ InModuleScope JiraPS {
                 }
             }
 
-            It 'Throws a meaningful exception if the server specified in the -ServerName parameter does not exist' {
+            It 'When a partial URL is provided and the server in the -ServerName parameter does not exist, it throws a meaningful exception' {
                 { Invoke-JiraMethod -Method Get -URI $testUri -ServerName 'FakeServer' } | Should Throw 'Server FakeServer does not exist in the configuration file. Use Add-JiraConfigServer to define this server.'
             }
 
-            It 'Throws a meaningful exception if -ServerName was not specified, but no servers exist in the config file' {
+            It 'When a partial URL is provided, -ServerName is not specified, and no servers exist in the config file, it throws a meaningful exception' {
                 { Invoke-JiraMethod -Method Get -URI $testUri } | Should Throw 'A server does not exist in the configuration file. Use Add-JiraConfigServer to define a server.'
+            }
+
+            It 'When a full URL is provided and a default server does not exist, it does not throw an exception' {
+                { Invoke-JiraMethod -Method Get -URI $testFullUri } | Should Not Throw
+
             }
         }
 
