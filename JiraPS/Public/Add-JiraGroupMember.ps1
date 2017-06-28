@@ -53,20 +53,6 @@ function Add-JiraGroupMember {
     )
 
     begin {
-<<<<<<< HEAD
-=======
-        Write-Debug "[Add-JiraGroupMember] Reading information from config file"
-        try {
-            Write-Debug "[Add-JiraGroupMember] Reading Jira server from config file"
-            $server = Get-JiraConfigServer -ConfigFile $ConfigFile -ErrorAction Stop
-        }
-        catch {
-            $err = $_
-            Write-Debug "[Add-JiraGroupMember] Encountered an error reading configuration data."
-            throw $err
-        }
-
->>>>>>> dev
         # At present, it looks like this REST method doesn't support arrays in the Name property...
         # in other words, a single REST call can only add a single group member to a single group.
 

@@ -19,16 +19,8 @@ InModuleScope JiraPS {
 
         # If we don't override this in a context or test, we don't want it to
         # actually try to query a JIRA instance
-<<<<<<< HEAD
         Mock Invoke-JiraMethod {
-=======
-        Mock Invoke-JiraMethod -ModuleName JiraPS {
->>>>>>> dev
-            if ($ShowMockData) {
-                Write-Host "       Mocked Invoke-JiraMethod" -ForegroundColor Cyan
-                Write-Host "         [Uri]     $Uri" -ForegroundColor Cyan
-                Write-Host "         [Method]  $Method" -ForegroundColor Cyan
-            }
+            ShowMockInfo 'Invoke-JiraMethod' 'Method', 'URI', 'ServerName'
         }
 
         Context "Sanity checking" {

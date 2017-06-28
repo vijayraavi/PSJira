@@ -13,18 +13,11 @@ function Invoke-JiraMethod {
         [ValidateNotNullOrEmpty()]
         [String] $Body,
 
-<<<<<<< HEAD
         [Parameter()]
         [String] $ServerName,
 
         [Parameter(ParameterSetName = 'UseCredential',
             Mandatory = $false)]
-=======
-        [Parameter(
-            Mandatory = $false,
-            ParameterSetName = 'UseCredential'
-        )]
->>>>>>> dev
         [System.Management.Automation.PSCredential] $Credential
 
         #        [Parameter(ParameterSetName='UseSession',
