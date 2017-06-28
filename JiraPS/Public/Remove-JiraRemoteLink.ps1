@@ -34,13 +34,13 @@ function Remove-JiraRemoteLink {
         [Parameter(Mandatory = $true)]
         [Int[]] $LinkId,
 
+        # Suppress user confirmation.
+        [Switch] $Force,
+
         # Credentials to use to connect to JIRA.
         # If not specified, this function will use anonymous access.
         [Parameter(Mandatory = $false)]
-        [PSCredential] $Credential,
-
-        # Suppress user confirmation.
-        [Switch] $Force
+        [PSCredential] $Credential
     )
 
     Begin {

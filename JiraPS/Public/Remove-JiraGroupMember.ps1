@@ -39,16 +39,16 @@ function Remove-JiraGroupMember {
         [Alias('UserName')]
         [Object[]] $User,
 
-        # Credentials to use to connect to JIRA.
-        # If not specified, this function will use anonymous access.
-        [Parameter(Mandatory = $false)]
-        [PSCredential] $Credential,
+        # Suppress user confirmation.
+        [Switch] $Force,
 
         # Whether output should be provided after invoking this function
         [Switch] $PassThru,
 
-        # Suppress user confirmation.
-        [Switch] $Force
+        # Credentials to use to connect to JIRA.
+        # If not specified, this function will use anonymous access.
+        [Parameter(Mandatory = $false)]
+        [PSCredential] $Credential
     )
 
     begin {

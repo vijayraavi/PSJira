@@ -31,13 +31,13 @@ function Remove-JiraUser {
         [Alias('UserName')]
         [Object[]] $User,
 
+        # Suppress user confirmation.
+        [Switch] $Force,
+
         # Credentials to use to connect to JIRA.
         # If not specified, this function will use anonymous access.
         [Parameter(Mandatory = $false)]
-        [PSCredential] $Credential,
-
-        # Suppress user confirmation.
-        [Switch] $Force
+        [PSCredential] $Credential
     )
 
     begin {
