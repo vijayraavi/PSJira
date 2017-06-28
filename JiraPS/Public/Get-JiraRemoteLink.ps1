@@ -18,10 +18,11 @@ function Get-JiraRemoteLink {
     [CmdletBinding()]
     param(
         # The Issue Object or ID to link.
-        [Parameter(ValueFromPipelineByPropertyName = $true,
-            ValueFromPipeline = $true,
+        [Parameter(
+            Position = 0,
             Mandatory = $true,
-            Position = 0
+            ValueFromPipeline = $true,
+            ValueFromPipelineByPropertyName = $true
         )]
         [Alias("Key")]
         [String[]]$Issue,

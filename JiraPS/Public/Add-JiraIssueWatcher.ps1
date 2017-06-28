@@ -45,6 +45,11 @@
         [System.Management.Automation.PSCredential] $Credential
     )
 
+    begin {
+        Write-Debug "[Add-JiraIssueWatcher] Begin"
+        # We can't validate pipeline input here, since pipeline input doesn't exist in the Begin block.
+    }
+
     process {
         Write-Debug "[Add-JiraIssueWatcher] Obtaining a reference to Jira issue [$Issue]"
         $issueObj = Get-JiraIssue -InputObject $Issue -ServerName $ServerName -Credential $Credential

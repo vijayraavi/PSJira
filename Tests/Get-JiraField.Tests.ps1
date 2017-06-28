@@ -174,5 +174,3 @@ InModuleScope JiraPS {
         }
     }
 }
-
-

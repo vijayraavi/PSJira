@@ -14,22 +14,22 @@ InModuleScope JiraPS {
 
         $restResult = @"
 {
-  "startAt": 0,
-  "maxResults": 1,
-  "total": 1,
-  "comments": [
-    {
-      "self": "$jiraServer/rest/api/2/issue/$issueID/comment/90730",
-      "id": "90730",
-      "body": "Test comment",
-      "created": "2015-05-01T16:24:38.000-0500",
-      "updated": "2015-05-01T16:24:38.000-0500",
-      "visibility": {
-        "type": "role",
-        "value": "Developers"
-      }
-    }
-  ]
+    "startAt": 0,
+    "maxResults": 1,
+    "total": 1,
+    "comments": [
+        {
+            "self": "$jiraServer/rest/api/2/issue/$issueID/comment/90730",
+            "id": "90730",
+            "body": "Test comment",
+            "created": "2015-05-01T16:24:38.000-0500",
+            "updated": "2015-05-01T16:24:38.000-0500",
+            "visibility": {
+                "type": "role",
+                "value": "Developers"
+            }
+        }
+    ]
 }
 "@
 
@@ -50,11 +50,6 @@ InModuleScope JiraPS {
         # Obtaining comments from an issue
         Mock Invoke-JiraMethod -ParameterFilter {$Method -eq 'Get' -and $URI -like "*/rest/api/latest/issue/$issueID/comment"} {
             ShowMockInfo 'Invoke-JiraMethod' -Params 'Method', 'Uri', 'ServerName'
-            # if ($ShowMockData) {
-            #     Write-Host "       Mocked Invoke-JiraMethod with GET method" -ForegroundColor Cyan
-            #     Write-Host "         [Method] $Method" -ForegroundColor Cyan
-            #     Write-Host "         [URI]    $URI" -ForegroundColor Cyan
-            # }
             ConvertFrom-Json2 -InputObject $restResult
         }
 
@@ -107,5 +102,3 @@ InModuleScope JiraPS {
         }
     }
 }
-
-

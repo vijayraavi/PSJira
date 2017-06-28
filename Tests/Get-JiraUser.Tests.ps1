@@ -16,40 +16,40 @@ InModuleScope JiraPS {
 
     $restResult = @"
 [
-  {
-    "self": "$jiraServer/rest/api/2/user?username=$testUsername",
-    "key": "$testUsername",
-    "name": "$testUsername",
-    "emailAddress": "$testEmail",
-    "displayName": "Powershell Test User",
-    "active": true
-  }
+    {
+        "self": "$jiraServer/rest/api/2/user?username=$testUsername",
+        "key": "$testUsername",
+        "name": "$testUsername",
+        "emailAddress": "$testEmail",
+        "displayName": "Powershell Test User",
+        "active": true
+    }
 ]
 "@
 
     # Removed from JSON: avatarUrls, timeZone
     $restResult2 = @"
 {
-  "self": "$jiraServer/rest/api/2/user?username=$testUsername",
-  "key": "$testUsername",
-  "name": "$testUsername",
-  "emailAddress": "$testEmail",
-  "displayName": "Powershell Test User",
-  "active": true,
-  "groups": {
-    "size": 5,
-    "items": [
-      {
-        "name": "$testGroup1",
-        "self": "$jiraServer/rest/api/2/group?groupname=$testGroup1"
-      },
-      {
-        "name": "$testGroup2",
-        "self": "$jiraServer/rest/api/2/group?groupname=$testGroup2"
-      }
-    ]
-  },
-  "expand": "groups"
+    "self": "$jiraServer/rest/api/2/user?username=$testUsername",
+    "key": "$testUsername",
+    "name": "$testUsername",
+    "emailAddress": "$testEmail",
+    "displayName": "Powershell Test User",
+    "active": true,
+    "groups": {
+        "size": 5,
+        "items": [
+            {
+                "name": "$testGroup1",
+                "self": "$jiraServer/rest/api/2/group?groupname=$testGroup1"
+            },
+            {
+                "name": "$testGroup2",
+                "self": "$jiraServer/rest/api/2/group?groupname=$testGroup2"
+            }
+        ]
+    },
+    "expand": "groups"
 }
 "@
 
@@ -124,5 +124,3 @@ InModuleScope JiraPS {
         }
     }
 }
-
-

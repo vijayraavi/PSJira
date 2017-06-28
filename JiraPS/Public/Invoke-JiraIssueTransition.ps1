@@ -39,10 +39,12 @@ function Invoke-JiraIssueTransition {
     [CmdletBinding()]
     param(
         # The Issue Object or ID to transition.
-        [Parameter(Mandatory = $true,
+        [Parameter(
             Position = 0,
+            Mandatory = $true,
             ValueFromPipeline = $true,
-            ValueFromPipelineByPropertyName = $true)]
+            ValueFromPipelineByPropertyName = $true
+        )]
         [Alias('Key')]
         [Object] $Issue,
 

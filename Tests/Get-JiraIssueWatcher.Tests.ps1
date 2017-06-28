@@ -7,7 +7,6 @@ InModuleScope JiraPS {
     . $PSScriptRoot\Shared.ps1
 
     $jiraServer = 'http://jiraserver.example.com'
-    $jiraServer = 'http://jiraserver.example.com'
     $issueID = 12345
     $issueKey = 'TEST-1'
 

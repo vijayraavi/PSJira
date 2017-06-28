@@ -39,21 +39,27 @@ function Get-JiraIssue {
     [CmdletBinding(DefaultParameterSetName = 'ByIssueKey')]
     param(
         # Key of the issue to search for.
-        [Parameter(ParameterSetName = 'ByIssueKey',
+        [Parameter(
+            Position = 0,
             Mandatory = $true,
-            Position = 0)]
+            ParameterSetName = 'ByIssueKey'
+        )]
         [ValidateNotNullOrEmpty()]
         [String[]] $Key,
 
         # Object of an issue to search for.
-        [Parameter(ParameterSetName = 'ByInputObject',
+        [Parameter(
+            Position = 0,
             Mandatory = $true,
-            Position = 0)]
+            ParameterSetName = 'ByInputObject'
+        )]
         [Object[]] $InputObject,
 
         # JQL query for which to search for.
-        [Parameter(ParameterSetName = 'ByJQL',
-            Mandatory = $true)]
+        [Parameter(
+            Mandatory = $true,
+            ParameterSetName = 'ByJQL'
+        )]
         [Alias('JQL')]
         [String] $Query,
 

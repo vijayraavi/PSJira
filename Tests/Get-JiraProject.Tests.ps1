@@ -18,47 +18,47 @@ InModuleScope JiraPS {
 
     $restResultAll = @"
 [
-  {
-    "self": "$jiraServer/rest/api/2/project/10003",
-    "id": "$projectId",
-    "key": "$projectKey",
-    "name": "$projectName",
-    "projectCategory": {
-      "self": "$jiraServer/rest/api/2/projectCategory/10000",
-      "id": "10000",
-      "description": "All Project Catagories",
-      "name": "All Project"
+    {
+        "self": "$jiraServer/rest/api/2/project/10003",
+        "id": "$projectId",
+        "key": "$projectKey",
+        "name": "$projectName",
+        "projectCategory": {
+            "self": "$jiraServer/rest/api/2/projectCategory/10000",
+            "id": "10000",
+            "description": "All Project Catagories",
+            "name": "All Project"
+        }
+    },
+    {
+        "self": "$jiraServer/rest/api/2/project/10121",
+        "id": "$projectId2",
+        "key": "$projectKey2",
+        "name": "$projectName2",
+        "projectCategory": {
+            "self": "$jiraServer/rest/api/2/projectCategory/10000",
+            "id": "10000",
+            "description": "All Project Catagories",
+            "name": "All Project"
+        }
     }
-  },
-  {
-    "self": "$jiraServer/rest/api/2/project/10121",
-    "id": "$projectId2",
-    "key": "$projectKey2",
-    "name": "$projectName2",
-    "projectCategory": {
-      "self": "$jiraServer/rest/api/2/projectCategory/10000",
-      "id": "10000",
-      "description": "All Project Catagories",
-      "name": "All Project"
-    }
-  }
 ]
 "@
 
     $restResultOne = @"
 [
-  {
-    "self": "$jiraServer/rest/api/2/project/10003",
-    "id": "$projectId",
-    "key": "$projectKey",
-    "name": "$projectName",
-    "projectCategory": {
-      "self": "$jiraServer/rest/api/2/projectCategory/10000",
-      "id": "10000",
-      "description": "All Project Catagories",
-      "name": "All Project"
+    {
+        "self": "$jiraServer/rest/api/2/project/10003",
+        "id": "$projectId",
+        "key": "$projectKey",
+        "name": "$projectName",
+        "projectCategory": {
+            "self": "$jiraServer/rest/api/2/projectCategory/10000",
+            "id": "10000",
+            "description": "All Project Catagories",
+            "name": "All Project"
+        }
     }
-  }
 ]
 "@
 
@@ -134,5 +134,3 @@ InModuleScope JiraPS {
         }
     }
 }
-
-

@@ -13,7 +13,11 @@ InModuleScope JiraPS {
 
     Describe "Add-JiraGroupMember" {
 
+<<<<<<< HEAD
         Mock Write-Debug {
+=======
+        Mock Write-Debug -ModuleName JiraPS {
+>>>>>>> dev
             if ($ShowDebugData) {
                 Write-Host -Object "[DEBUG] $Message" -ForegroundColor Yellow
             }

@@ -15,8 +15,10 @@
     [CmdletBinding(SupportsShouldProcess = $true)]
     param(
         # Name for the new group.
-        [Parameter(Mandatory = $true,
-            Position = 0)]
+        [Parameter(
+            Position = 0,
+            Mandatory = $true
+        )]
         [Alias('Name')]
         [String] $GroupName,
 

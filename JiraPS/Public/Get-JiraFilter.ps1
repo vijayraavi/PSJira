@@ -20,16 +20,20 @@
     [CmdletBinding(DefaultParameterSetName = 'ByFilterID')]
     param(
         # ID of the filter to search for.
-        [Parameter(ParameterSetName = 'ByFilterID',
+        [Parameter(
+            Position = 0,
             Mandatory = $true,
-            Position = 0)]
+            ParameterSetName = 'ByFilterID'
+        )]
         [String[]] $Id,
 
         # Object of the filter to search for.
-        [Parameter(ParameterSetName = 'ByInputObject',
+        [Parameter(
             Mandatory = $true,
             ValueFromPipeline = $true,
-            ValueFromPipelineByPropertyName = $true)]
+            ParameterSetName = 'ByInputObject',
+            ValueFromPipelineByPropertyName = $true
+        )]
         [Object[]] $InputObject,
 
         # Server name from the module config to connect to.

@@ -67,6 +67,11 @@ function Add-JiraIssueWorklog {
         [System.Management.Automation.PSCredential] $Credential
     )
 
+    begin {
+        Write-Debug "[Add-JiraIssueWorklog] Begin"
+        # We can't validate pipeline input here, since pipeline input doesn't exist in the Begin block.
+    }
+
     process {
         Write-Debug "[Add-JiraIssueWorklog] Checking Issue parameter"
         if ($Issue.PSObject.TypeNames[0] -eq 'JiraPS.Issue') {
@@ -128,5 +133,3 @@ function Add-JiraIssueWorklog {
         Write-Debug "[Add-JiraIssueWorklog] Complete"
     }
 }
-
-

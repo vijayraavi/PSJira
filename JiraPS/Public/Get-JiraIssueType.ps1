@@ -25,9 +25,11 @@
     [CmdletBinding()]
     param(
         # The Issue Type name or ID to search.
-        [Parameter(Mandatory = $false,
+        [Parameter(
             Position = 0,
-            ValueFromRemainingArguments = $true)]
+            Mandatory = $false,
+            ValueFromRemainingArguments = $true
+        )]
         [String[]] $IssueType,
 
         # Server name from the module config to connect to.

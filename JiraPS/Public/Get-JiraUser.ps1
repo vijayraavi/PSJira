@@ -21,17 +21,21 @@ function Get-JiraUser {
     param(
         # Username, name, or e-mail address of the user. Any of these should
         # return search results from Jira.
-        [Parameter(ParameterSetName = 'ByUserName',
+        [Parameter(
+            Position = 0,
             Mandatory = $true,
-            Position = 0)]
+            ParameterSetName = 'ByUserName'
+        )]
         [ValidateNotNullOrEmpty()]
         [Alias('User', 'Name')]
         [String[]] $UserName,
 
         # User Object of the user.
-        [Parameter(ParameterSetName = 'ByInputObject',
+        [Parameter(
+            Position = 0,
             Mandatory = $true,
-            Position = 0)]
+            ParameterSetName = 'ByInputObject'
+        )]
         [Object[]] $InputObject,
 
         # Include inactive users in the search

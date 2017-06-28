@@ -12,16 +12,16 @@ InModuleScope JiraPS {
 
     $testJson = @"
 {
-  "name": "$testGroupName",
-  "self": "$jiraServer/rest/api/2/group?groupname=$testGroupName",
-  "users": {
-    "size": 0,
-    "items": [],
-    "max-results": 50,
-    "start-index": 0,
-    "end-index": 0
-  },
-  "expand": "users"
+    "name": "$testGroupName",
+    "self": "$jiraServer/rest/api/2/group?groupname=$testGroupName",
+    "users": {
+        "size": 0,
+        "items": [],
+        "max-results": 50,
+        "start-index": 0,
+        "end-index": 0
+    },
+    "expand": "users"
 }
 "@
 
@@ -65,5 +65,3 @@ InModuleScope JiraPS {
         }
     }
 }
-
-

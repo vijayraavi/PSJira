@@ -26,8 +26,10 @@ function Get-JiraProject {
     [CmdletBinding(DefaultParameterSetName = 'AllProjects')]
     param(
         # The Project ID or project key of a project to search.
-        [Parameter(Mandatory = $false,
-            Position = 0)]
+        [Parameter(
+            Position = 0,
+            Mandatory = $false
+        )]
         [String[]] $Project,
 
         # Server name from the module config to connect to.

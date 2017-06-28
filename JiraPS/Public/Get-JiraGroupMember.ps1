@@ -29,10 +29,12 @@ function Get-JiraGroupMember {
     [CmdletBinding()]
     param(
         # Group object of which to display the members.
-        [Parameter(Mandatory = $true,
+        [Parameter(
             Position = 0,
+            Mandatory = $true,
             ValueFromPipeline = $true,
-            ValueFromPipelineByPropertyName = $true)]
+            ValueFromPipelineByPropertyName = $true
+        )]
         [Object] $Group,
 
         # Index of the first user to return. This can be used to "page" through

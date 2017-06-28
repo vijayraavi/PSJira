@@ -28,15 +28,19 @@ function Get-JiraComponent {
     [CmdletBinding(DefaultParameterSetName = 'ByID')]
     param(
         # The Project ID or project key of a project to search.
-        [Parameter(ParameterSetName = 'ByProject',
-            ValueFromPipeline,
-            Mandatory = $true)]
+        [Parameter(
+            Mandatory = $true,
+            ValueFromPipeline = $true,
+            ParameterSetName = 'ByProject'
+        )]
         $Project,
 
         # The Component ID.
-        [Parameter(Mandatory = $true,
+        [Parameter(
             Position = 0,
-            ParameterSetName = 'ByID')]
+            Mandatory = $true,
+            ParameterSetName = 'ByID'
+        )]
         [Alias("Id")]
         [int[]] $ComponentId,
 

@@ -22,9 +22,11 @@
     [CmdletBinding()]
     param(
         # The Field name or ID to search.
-        [Parameter(Mandatory = $false,
+        [Parameter(
             Position = 0,
-            ValueFromRemainingArguments = $true)]
+            Mandatory = $false,
+            ValueFromRemainingArguments = $true
+        )]
         [String[]] $Field,
 
         # Server name from the module config to connect to.

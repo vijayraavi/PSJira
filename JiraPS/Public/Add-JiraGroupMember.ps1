@@ -25,9 +25,11 @@ function Add-JiraGroupMember {
     [CmdletBinding()]
     param(
         # Group (or list of groups) to which the user(s) will be added.
-        [Parameter(Mandatory = $true,
+        [Parameter(
             Position = 0,
-            ValueFromPipeline = $true)]
+            Mandatory = $true,
+            ValueFromPipeline = $true
+        )]
         [Alias('GroupName')]
         [Object[]] $Group,
 
@@ -51,6 +53,20 @@ function Add-JiraGroupMember {
     )
 
     begin {
+<<<<<<< HEAD
+=======
+        Write-Debug "[Add-JiraGroupMember] Reading information from config file"
+        try {
+            Write-Debug "[Add-JiraGroupMember] Reading Jira server from config file"
+            $server = Get-JiraConfigServer -ConfigFile $ConfigFile -ErrorAction Stop
+        }
+        catch {
+            $err = $_
+            Write-Debug "[Add-JiraGroupMember] Encountered an error reading configuration data."
+            throw $err
+        }
+
+>>>>>>> dev
         # At present, it looks like this REST method doesn't support arrays in the Name property...
         # in other words, a single REST call can only add a single group member to a single group.
 
@@ -74,7 +90,7 @@ function Add-JiraGroupMember {
             }
         }
 
-        #        $userJsons = $userAL.ToArray()
+        # $userJsons = $userAL.ToArray()
         $userNames = $userAL.ToArray()
 
         $restUrl = "/rest/api/latest/group/user?groupname={0}"

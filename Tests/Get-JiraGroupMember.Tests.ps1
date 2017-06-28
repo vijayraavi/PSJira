@@ -55,12 +55,6 @@ InModuleScope JiraPS {
         Context "Behavior testing" {
             Mock Invoke-JiraMethod {
                 ShowMockInfo 'Invoke-JiraMethod' 'Uri', 'Method', 'ServerName'
-                # if ($ShowMockData) {
-                #     Write-Host "       Mocked Invoke-JiraMethod" -ForegroundColor Cyan
-                #     Write-Host "         [Uri]     $Uri" -ForegroundColor Cyan
-                #     Write-Host "         [Method]  $Method" -ForegroundColor Cyan
-                #     #                    Write-Host "         [Body]    $Body" -ForegroundColor Cyan
-                # }
             }
 
             Mock Get-JiraUser {
@@ -100,33 +94,33 @@ InModuleScope JiraPS {
                     }
                     ConvertFrom-Json2 -InputObject @'
 {
-  "name": "testgroup",
-  "self": "https://jira.example.com/rest/api/2/group?groupname=testgroup",
-  "users": {
-    "size": 2,
-    "items": [
-        {
-            "self": "https://jira.example.com/rest/api/2/user?username=testuser1",
-            "key": "testuser1",
-            "name": "testuser1",
-            "emailAddress": "testuser1@example.com",
-            "displayName": "Test User 1",
-            "active": true
-        },
-        {
-            "self": "https://jira.example.com/rest/api/2/user?username=testuser2",
-            "key": "testuser2",
-            "name": "testuser2",
-            "emailAddress": "testuser2@example.com",
-            "displayName": "Test User 2",
-            "active": true
-        }
-    ],
-    "max-results": 50,
-    "start-index": 0,
-    "end-index": 0
-  },
-  "expand": "users"
+    "name": "testgroup",
+    "self": "https://jira.example.com/rest/api/2/group?groupname=testgroup",
+    "users": {
+        "size": 2,
+        "items": [
+            {
+                "self": "https://jira.example.com/rest/api/2/user?username=testuser1",
+                "key": "testuser1",
+                "name": "testuser1",
+                "emailAddress": "testuser1@example.com",
+                "displayName": "Test User 1",
+                "active": true
+            },
+            {
+                "self": "https://jira.example.com/rest/api/2/user?username=testuser2",
+                "key": "testuser2",
+                "name": "testuser2",
+                "emailAddress": "testuser2@example.com",
+                "displayName": "Test User 2",
+                "active": true
+            }
+        ],
+        "max-results": 50,
+        "start-index": 0,
+        "end-index": 0
+    },
+    "expand": "users"
 }
 '@
                 }

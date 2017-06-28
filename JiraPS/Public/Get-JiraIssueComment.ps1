@@ -21,10 +21,12 @@ function Get-JiraIssueComment {
     param(
         # JIRA issue to check for comments.
         # Can be a JiraPS.Issue object, issue key, or internal issue ID.
-        [Parameter(Mandatory = $true,
+        [Parameter(
             Position = 0,
+            Mandatory = $true,
             ValueFromPipeline = $true,
-            ValueFromPipelineByPropertyName = $true)]
+            ValueFromPipelineByPropertyName = $true
+        )]
         [Alias('Key')]
         [Object] $Issue,
 

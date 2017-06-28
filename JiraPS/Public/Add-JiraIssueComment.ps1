@@ -27,15 +27,19 @@ function Add-JiraIssueComment {
     [CmdletBinding()]
     param(
         # Comment that should be added to JIRA.
-        [Parameter(Mandatory = $true,
-            Position = 0)]
+        [Parameter(
+            Position = 0,
+            Mandatory = $true
+        )]
         [String] $Comment,
 
         # Issue that should be commented upon.
-        [Parameter(Mandatory = $true,
+        [Parameter(
             Position = 1,
+            Mandatory = $true,
             ValueFromPipeline = $true,
-            ValueFromPipelineByPropertyName = $true)]
+            ValueFromPipelineByPropertyName = $true
+        )]
         [Alias('Key')]
         [Object] $Issue,
 

@@ -22,19 +22,23 @@ function Get-JiraGroup {
     [CmdletBinding(DefaultParameterSetName = 'ByGroupName')]
     param(
         # Name of the group to search for.
-        [Parameter(ParameterSetName = 'ByGroupName',
+        [Parameter(
+            Position = 0,
             Mandatory = $true,
-            Position = 0)]
+            ParameterSetName = 'ByGroupName'
+        )]
         [ValidateNotNullOrEmpty()]
         [Alias('Name')]
         [String[]] $GroupName,
 
         # Object of the group to search for.
-        [Parameter(ParameterSetName = 'ByInputObject',
-            Mandatory = $true,
+        [Parameter(
             Position = 0,
+            Mandatory = $true,
             ValueFromPipeline = $true,
-            ValueFromPipelineByPropertyName = $true)]
+            ParameterSetName = 'ByInputObject',
+            ValueFromPipelineByPropertyName = $true
+        )]
         [Object[]] $InputObject,
 
         # Server name from the module config to connect to.

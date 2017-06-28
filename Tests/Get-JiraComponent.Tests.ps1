@@ -19,32 +19,32 @@ InModuleScope JiraPS {
 
     $restResultAll = @"
 [
-  {
-    "self": "$jiraServer/rest/api/2/component/$componentId",
-    "id": "$componentId",
-    "name": "$componentName",
-    "project": "$projectKey",
-    "projectId": "$projectId"
-  },
-  {
-    "self": "$jiraServer/rest/api/2/component/$componentId2",
-    "id": "$componentId2",
-    "name": "$componentName2",
-    "project": "$projectKey",
-    "projectId": "$projectId"
-  }
+    {
+        "self": "$jiraServer/rest/api/2/component/$componentId",
+        "id": "$componentId",
+        "name": "$componentName",
+        "project": "$projectKey",
+        "projectId": "$projectId"
+    },
+    {
+        "self": "$jiraServer/rest/api/2/component/$componentId2",
+        "id": "$componentId2",
+        "name": "$componentName2",
+        "project": "$projectKey",
+        "projectId": "$projectId"
+    }
 ]
 "@
 
     $restResultOne = @"
 [
-  {
-    "self": "$jiraServer/rest/api/2/component/$componentId",
-    "id": "$componentId",
-    "name": "$componentName",
-    "project": "$projectKey",
-    "projectId": "$projectId"
-  }
+    {
+        "self": "$jiraServer/rest/api/2/component/$componentId",
+        "id": "$componentId",
+        "name": "$componentName",
+        "project": "$projectKey",
+        "projectId": "$projectId"
+    }
 ]
 "@
 
@@ -84,5 +84,3 @@ InModuleScope JiraPS {
         }
     }
 }
-
-
