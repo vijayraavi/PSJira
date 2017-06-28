@@ -1,5 +1,4 @@
-function Get-JiraPriority
-{
+function Get-JiraPriority {
     <#
     .Synopsis
         Returns information about the available priorities in JIRA.
@@ -24,45 +23,42 @@ function Get-JiraPriority
         [Parameter(Mandatory = $false)]
         [Int] $Id,
 
+        # Server name from the module config to connect to.
+        # If not specified, the default server will be used.
+        [Parameter(Mandatory = $false)]
+        [String] $ServerName,
+
         # Credentials to use to connect to JIRA.
         # If not specified, this function will use anonymous access.
         [Parameter(Mandatory = $false)]
         [System.Management.Automation.PSCredential] $Credential
     )
 
-    begin
-    {
-        Write-Debug "[Get-JiraPriority] Reading server from config file"
-        $server = Get-JiraConfigServer -ConfigFile $ConfigFile -ErrorAction Stop
-        $priorityUrl = "$($server)/rest/api/latest/priority"
+    begin {
+        $priorityUrl = "/rest/api/latest/priority"
 
-        if ($Id)
-        {
+        if ($Id) {
             $priorityUrl = "$priorityUrl/$Id"
         }
     }
 
-    process
-    {
+    process {
         Write-Debug "[Get-JiraPriority] Preparing for blastoff!"
-        $result = Invoke-JiraMethod -Method Get -URI $priorityUrl -Credential $Credential
+        $result = Invoke-JiraMethod -Method Get -URI $priorityUrl -ServerName $ServerName -Credential $Credential
 
-        if ($result)
-        {
+        if ($result) {
             Write-Debug "[Get-JiraPriority] Converting REST result to JiraPriority object"
             $obj = ConvertTo-JiraPriority -InputObject $result
 
             Write-Debug "[Get-JiraPriority] Outputting result"
             Write-Output $obj
         }
-        else
-        {
+        else {
             Write-Debug "[Get-JiraPriority] Invoke-JiraMethod returned no results to output."
         }
     }
 
-    end
-    {
+    end {
         Write-Debug "[Get-JiraPriority] Complete."
     }
 }

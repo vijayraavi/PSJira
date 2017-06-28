@@ -2,7 +2,7 @@
 
 InModuleScope JiraPS {
 
-    [System.Diagnostics.CodeAnalysis.SuppressMessage('PSUseDeclaredVarsMoreThanAssigments', '', Scope='*', Target='SuppressImportModule')]
+    [System.Diagnostics.CodeAnalysis.SuppressMessage('PSUseDeclaredVarsMoreThanAssigments', '', Scope = '*', Target = 'SuppressImportModule')]
     $SuppressImportModule = $true
     . $PSScriptRoot\Shared.ps1
 
@@ -27,32 +27,20 @@ InModuleScope JiraPS {
 
     Describe "New-JiraGroup" {
 
-        # Mock Write-Debug {
-        #     if ($ShowDebugData)
-        #     {
-        #         Write-Host -Object "[DEBUG] $Message" -ForegroundColor Yellow
-        #     }
-        # }
-
-        Mock Get-JiraConfigServer -ModuleName JiraPS {
-            Write-Output $jiraServer
+        if ($ShowDebugText) {
+            Mock Write-Debug {
+                Write-Host "DEBUG: $Message" -ForegroundColor Yellow
+            }
         }
 
-        Mock Invoke-JiraMethod -ModuleName JiraPS -ParameterFilter {$Method -eq 'POST' -and $URI -eq "$jiraServer/rest/api/latest/group"} {
-            if ($ShowMockData)
-            {
-                Write-Host "       Mocked Invoke-JiraMethod with POST method" -ForegroundColor Cyan
-                Write-Host "         [Method]         $Method" -ForegroundColor Cyan
-                Write-Host "         [URI]            $URI" -ForegroundColor Cyan
-            }
+        Mock Invoke-JiraMethod -ParameterFilter {$Method -eq 'POST' -and $URI -eq "/rest/api/latest/group"} {
+            ShowMockInfo 'Invoke-JiraMethod' 'Method', 'URI', 'ServerName'
             ConvertFrom-Json2 $testJson
         }
 
         # Generic catch-all. This will throw an exception if we forgot to mock something.
-        Mock Invoke-JiraMethod -ModuleName JiraPS {
-            Write-Host "       Mocked Invoke-JiraMethod with no parameter filter." -ForegroundColor DarkRed
-            Write-Host "         [Method]         $Method" -ForegroundColor DarkRed
-            Write-Host "         [URI]            $URI" -ForegroundColor DarkRed
+        Mock Invoke-JiraMethod {
+            ShowMockInfo 'Invoke-JiraMethod' 'Method', 'URI', 'ServerName'
             throw "Unidentified call to Invoke-JiraMethod"
         }
 
@@ -71,12 +59,10 @@ InModuleScope JiraPS {
             Assert-MockCalled 'ConvertTo-JiraGroup'
         }
 
-        # It "Outputs a JiraPS.Group object" {
-        #     $newResult = New-JiraGroup -GroupName $testGroupName
-        #     (Get-Member -InputObject $newResult).TypeName | Should Be 'JiraPS.Group'
-        #     $newResult.Name | Should Be $testGroupName
-        #     $newResult.RestUrl | Should Be "$jiraServer/rest/api/2/group?groupname=$testGroupName"
-        # }
+        It "Passes the -ServerName parameter to Invoke-JiraMethod if specified" {
+            New-JiraGroup -GroupName $testGroupName -ServerName 'testServer' | Out-Null
+            Assert-MockCalled -CommandName Invoke-JiraMethod -ParameterFilter {$ServerName -eq 'testServer'}
+        }
     }
 }
 

@@ -1,5 +1,4 @@
-function Get-JiraRemoteLink
-{
+function Get-JiraRemoteLink {
     <#
     .Synopsis
        Returns a remote link from a Jira issue
@@ -30,56 +29,49 @@ function Get-JiraRemoteLink
         # Get a single link by it's id.
         [Int]$LinkId,
 
+        # Server name from the module config to connect to.
+        # If not specified, the default server will be used.
+        [Parameter(Mandatory = $false)]
+        [String] $ServerName,
+
         # Credentials to use to connect to JIRA.
         # If not specified, this function will use anonymous access.
         [Parameter(Mandatory = $false)]
         [PSCredential] $Credential
     )
 
-    Begin
-    {
-        Write-Debug "[Get-JiraRemoteLink] Reading server from config file"
-        $server = Get-JiraConfigServer -ConfigFile $ConfigFile -ErrorAction Stop
-
-        Write-Debug "[Get-JiraRemoteLink] ParameterSetName=$($PSCmdlet.ParameterSetName)"
-
-        Write-Debug "[Get-JiraRemoteLink] Building URI for REST call"
-        $linkUrl = "$server/rest/api/latest/issue/{0}/remotelink"
+    begin {
+        Write-Debug "[Get-JiraRemoteLink] ParameterSetName = $($PSCmdlet.ParameterSetName)"
+        $linkUrl = "/rest/api/latest/issue/{0}/remotelink"
     }
 
-    Process
-    {
-        foreach ($k in $Issue)
-        {
+    process {
+        foreach ($k in $Issue) {
             Write-Debug "[Get-JiraRemoteLink] Processing issue key [$k]"
             $thisUrl = $linkUrl -f $k
 
-            if ($linkId)
-            {
+            if ($linkId) {
                 $thisUrl += "/$l"
             }
 
             Write-Debug "[Get-JiraRemoteLink] Preparing for blastoff!"
-            $result = Invoke-JiraMethod -Method Get -URI $thisUrl -Credential $Credential
+            $result = Invoke-JiraMethod -Method Get -URI $thisUrl -ServerName $ServerName -Credential $Credential
 
-            if ($result)
-            {
-                Write-Debug "[Get-JiraRemoteLink] Converting results to JiraPS.Group"
+            if ($result) {
+                Write-Debug "[Get-JiraRemoteLink] Converting results to JiraPS.Link"
                 $obj = ConvertTo-JiraLink -InputObject $result
 
                 Write-Debug "[Get-JiraRemoteLink] Outputting results"
                 Write-Output $obj
             }
-            else
-            {
+            else {
                 Write-Debug "[Get-JiraRemoteLink] No results were returned from JIRA"
                 Write-Verbose "No results were returned from JIRA."
             }
         }
     }
 
-    End
-    {
+    End {
         Write-Debug "[Get-JiraRemoteLink] Complete"
     }
 }
