@@ -22,22 +22,24 @@ InModuleScope JiraPS {
 "@
 
     Describe "Remove-JiraIssueLink" {
-        $showMockData = $true
-        Mock Get-JiraConfigServer -ModuleName JiraPS {
-            Write-Output $jiraServer
+
+        if ($ShowDebugText) {
+            Mock Write-Debug {
+                Write-Host "DEBUG: $Message" -ForegroundColor Yellow
+            }
         }
 
         # Generic catch-all. This will throw an exception if we forgot to mock something.
-        Mock Invoke-JiraMethod -ModuleName JiraPS {
-            ShowMockInfo 'Invoke-JiraMethod' 'Method', 'Uri'
+        Mock Invoke-JiraMethod {
+            ShowMockInfo 'Invoke-JiraMethod' 'Method', 'Uri', 'ServerName'
             throw "Unidentified call to Invoke-JiraMethod"
         }
 
-        Mock Invoke-JiraMethod -ModuleName JiraPS -ParameterFilter {$Method -eq 'Delete' -and $URI -eq "$jiraServer/rest/api/latest/issueLink/1234"} {
-            return $null
+        Mock Invoke-JiraMethod -ParameterFilter {$Method -eq 'Delete' -and $URI -eq "/rest/api/latest/issueLink/1234"} {
+            ShowMockInfo 'Invoke-JiraMethod' 'Method', 'Uri', 'ServerName'
         }
 
-        Mock Get-JiraIssue -ModuleName JiraPS -ParameterFilter {$Key -eq "TEST-01"} {
+        Mock Get-JiraIssue -ParameterFilter {$Key -eq "TEST-01"} {
             # We don't care about the content of any field except for the id of the issuelinks
             $obj = [PSCustomObject]@{
                 "id"          = $issueLinkId
@@ -54,7 +56,7 @@ InModuleScope JiraPS {
             return $issue
         }
 
-        Mock Get-JiraIssueLink -ModuleName JiraPS {
+        Mock Get-JiraIssueLink {
             $obj = [PSCustomObject]@{
                 "id"          = $issueLinkId
                 "type"        = "foo"
@@ -96,6 +98,11 @@ InModuleScope JiraPS {
 
             It "Validates pipeline input" {
                 { @{id = 1} | Remove-JiraIssueLink } | Should Throw
+            }
+
+            It "Passes the -ServerName parameter to Invoke-JiraMethod if specified" {
+                Get-JiraIssue -Key TEST-01 | Remove-JiraIssueLink -ServerName 'testServer' | Out-Null
+                Assert-MockCalled -CommandName Invoke-JiraMethod -ParameterFilter {$ServerName -eq 'testServer'}
             }
         }
     }

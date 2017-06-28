@@ -13,19 +13,16 @@ InModuleScope JiraPS {
             }
         }
 
-        Mock Get-JiraConfigServer {
-            'https://jira.example.com'
-        }
-
         Mock Get-JiraIssue {
             [PSCustomObject] @{
                 'RestURL' = 'https://jira.example.com/rest/api/2/issue/12345'
+                'Key'     = 'TEST-1'
             }
         }
 
         # If we don't override this in a context or test, we don't want it to
         # actually try to query a JIRA instance
-        Mock Invoke-JiraMethod {}
+        Mock Invoke-JiraMethod
 
         Context "Sanity checking" {
             $command = Get-Command -Name Set-JiraIssue
@@ -52,12 +49,7 @@ InModuleScope JiraPS {
 
         Context "Behavior testing" {
             Mock Invoke-JiraMethod {
-                if ($ShowMockData) {
-                    Write-Host "       Mocked Invoke-JiraMethod" -ForegroundColor Cyan
-                    Write-Host "         [Uri]     $Uri" -ForegroundColor Cyan
-                    Write-Host "         [Method]  $Method" -ForegroundColor Cyan
-                    #                    Write-Host "         [Body]    $Body" -ForegroundColor Cyan
-                }
+                ShowMockInfo 'Invoke-JiraMethod' 'Method', 'URI', 'ServerName'
             }
 
             Mock Get-JiraUser {
@@ -66,10 +58,10 @@ InModuleScope JiraPS {
                 }
             }
 
-            Mock Set-JiraIssueLabel {}
+            Mock Set-JiraIssueLabel
 
             It "Modifies the summary of an issue if the -Summary parameter is passed" {
-                { Set-JiraIssue -Issue TEST-001 -Summary 'New summary' } | Should Not Throw
+                { Set-JiraIssue -Issue TEST-1 -Summary 'New summary' } | Should Not Throw
                 # The String in the ParameterFilter is made from the keywords
                 # we should expect to see in the JSON that should be sent,
                 # including the summary provided in the test call above.
@@ -77,55 +69,64 @@ InModuleScope JiraPS {
             }
 
             It "Modifies the description of an issue if the -Description parameter is passed" {
-                { Set-JiraIssue -Issue TEST-001 -Description 'New description' } | Should Not Throw
+                { Set-JiraIssue -Issue TEST-1 -Description 'New description' } | Should Not Throw
                 Assert-MockCalled -CommandName Invoke-JiraMethod -ModuleName JiraPS -Times 1 -Scope It -ParameterFilter { $Method -eq 'Put' -and $URI -like '*/rest/api/2/issue/12345' -and $Body -like '*description*set*New description*' }
             }
 
             It "Modifies the assignee of an issue if -Assignee is passed" {
-                { Set-JiraIssue -Issue TEST-001 -Assignee username } | Should Not Throw
+                { Set-JiraIssue -Issue TEST-1 -Assignee username } | Should Not Throw
                 Assert-MockCalled -CommandName Invoke-JiraMethod -ModuleName JiraPS -Times 1 -Scope It -ParameterFilter { $Method -eq 'Put' -and $URI -like '*/rest/api/2/issue/12345/assignee' -and $Body -like '*name*username*' }
             }
 
             It "Unassigns an issue if 'Unassigned' is passed to the -Assignee parameter" {
-                { Set-JiraIssue -Issue TEST-001 -Assignee unassigned } | Should Not Throw
+                { Set-JiraIssue -Issue TEST-1 -Assignee unassigned } | Should Not Throw
                 Assert-MockCalled -CommandName Invoke-JiraMethod -ModuleName JiraPS -Times 1 -Scope It -ParameterFilter { $Method -eq 'Put' -and $URI -like '*/rest/api/2/issue/12345/assignee' -and $Body -like '*name*""*' }
             }
 
             It "Calls Invoke-JiraMethod twice if using Assignee and another field" {
-                { Set-JiraIssue -Issue TEST-001 -Summary 'New summary' -Assignee username } | Should Not Throw
+                { Set-JiraIssue -Issue TEST-1 -Summary 'New summary' -Assignee username } | Should Not Throw
                 Assert-MockCalled -CommandName Invoke-JiraMethod -ModuleName JiraPS -Times 1 -Scope It -ParameterFilter { $Method -eq 'Put' -and $URI -like '*/rest/api/2/issue/12345' -and $Body -like '*summary*set*New summary*' }
                 Assert-MockCalled -CommandName Invoke-JiraMethod -ModuleName JiraPS -Times 1 -Scope It -ParameterFilter { $Method -eq 'Put' -and $URI -like '*/rest/api/2/issue/12345/assignee' -and $Body -like '*name*username*' }
             }
 
             It "Uses Set-JiraIssueLabel with the -Set parameter when the -Label parameter is used" {
-                { Set-JiraIssue -Issue TEST-001 -Label 'test' } | Should Not Throw
+                { Set-JiraIssue -Issue TEST-1 -Label 'test' } | Should Not Throw
                 Assert-MockCalled -CommandName Set-JiraIssueLabel -ModuleName JiraPS -Times 1 -Scope It -ParameterFilter { $Set -ne $null }
             }
 
-            It "Updates custom fields if provided to the -Fields parameter" {
-                Mock Get-JiraField {
-                    [PSCustomObject] @{
-                        'Name' = $Field;
-                        'ID'   = $Field;
-                    }
+            Mock Get-JiraField {
+                [PSCustomObject] @{
+                    'Name' = $Field;
+                    'ID'   = $Field;
                 }
-                { Set-JiraIssue -Issue TEST-001 -Fields @{'customfield_12345' = 'foo'; 'customfield_67890' = 'bar'; 'customfield_111222' = @(@{value = 'foobar'})} } | Should Not Throw
+            }
+
+            It "Updates custom fields if provided to the -Fields parameter" {
+                { Set-JiraIssue -Issue TEST-1 -Fields @{'customfield_12345' = 'foo'; 'customfield_67890' = 'bar'; 'customfield_111222' = @(@{value = 'foobar'})} } | Should Not Throw
                 Assert-MockCalled -CommandName Invoke-JiraMethod -ModuleName JiraPS -Times 1 -Scope It -ParameterFilter { $Method -eq 'Put' -and $URI -like '*/rest/api/2/issue/12345' -and $Body -like '*customfield_12345*set*foo*' }
                 Assert-MockCalled -CommandName Invoke-JiraMethod -ModuleName JiraPS -Times 1 -Scope It -ParameterFilter { $Method -eq 'Put' -and $URI -like '*/rest/api/2/issue/12345' -and $Body -like '*customfield_67890*set*bar*' }
                 Assert-MockCalled -CommandName Invoke-JiraMethod -ModuleName JiraPS -Times 1 -Scope It -ParameterFilter { $Method -eq 'Put' -and $URI -like '*/rest/api/2/issue/12345' -and $Body -like '*customfield_111222*set*foobar*' }
             }
 
+            It "Passes the -ServerName parameter to all applicable methods if specified" {
+                Set-JiraIssue -Issue TEST-1 -Summary 'New summary' -Assignee 'username' -Label 'newLabel' -Fields @{'field' = 'value'} | Out-Null
+                Assert-MockCalled -CommandName Get-JiraIssue -ParameterFilter {$ServerName -eq 'testServer'}
+                Assert-MockCalled -CommandName Set-JiraIssueLabel -ParameterFilter {$ServerName -eq 'testServer'}
+                Assert-MockCalled -CommandName Get-JiraField -ParameterFilter {$ServerName -eq 'testServer'}
+
+                # Calls to Invoke-JiraUser use the full URL (from the RestURL property of the issue object)
+            }
         }
 
         Context "Input testing" {
             It "Accepts an issue key for the -Issue parameter" {
-                { Set-JiraIssue -Issue TEST-001 -Summary 'Test summary - using issue key' } | Should Not Throw
+                { Set-JiraIssue -Issue TEST-1 -Summary 'Test summary - using issue key' } | Should Not Throw
                 Assert-MockCalled -CommandName Get-JiraIssue -ModuleName JiraPS -Exactly -Times 1 -Scope It
                 Assert-MockCalled -CommandName Invoke-JiraMethod -ModuleName JiraPS -Exactly -Times 1 -Scope It
             }
 
             It "Accepts an issue object for the -Issue parameter" {
-                $issue = Get-JiraIssue -Key TEST-001
+                $issue = Get-JiraIssue -Key TEST-1
                 { Set-JiraIssue -Issue $issue -Summary 'Test summary - Object' } | Should Not Throw
                 # Get-JiraIssue is called once explicitly in this test, and a
                 # second time by Set-JiraIssue
@@ -134,7 +135,7 @@ InModuleScope JiraPS {
             }
 
             It "Accepts the output of Get-JiraObject by pipeline for the -Issue paramete" {
-                { Get-JiraIssue -Key TEST-001 | Set-JiraIssue -Summary 'Test summary - InputObject pipeline' } | Should Not Throw
+                { Get-JiraIssue -Key TEST-1 | Set-JiraIssue -Summary 'Test summary - InputObject pipeline' } | Should Not Throw
                 Assert-MockCalled -CommandName Get-JiraIssue -ModuleName JiraPS -Exactly -Times 2 -Scope It
                 Assert-MockCalled -CommandName Invoke-JiraMethod -ModuleName JiraPS -Exactly -Times 1 -Scope It
             }
@@ -147,7 +148,7 @@ InModuleScope JiraPS {
             }
 
             It "Throws an exception if an invalid user is specified for the -Assignee parameter" {
-                { Set-JiraIssue -Key TEST-001 -Assignee notReal } | Should Throw
+                { Set-JiraIssue -Key TEST-1 -Assignee notReal } | Should Throw
             }
         }
     }

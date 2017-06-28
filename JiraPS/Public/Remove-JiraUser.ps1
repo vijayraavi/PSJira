@@ -34,6 +34,11 @@ function Remove-JiraUser {
         # Suppress user confirmation.
         [Switch] $Force,
 
+        # Server name from the module config to connect to.
+        # If not specified, the default server will be used.
+        [Parameter(Mandatory = $false)]
+        [String] $ServerName,
+
         # Credentials to use to connect to JIRA.
         # If not specified, this function will use anonymous access.
         [Parameter(Mandatory = $false)]
@@ -41,18 +46,7 @@ function Remove-JiraUser {
     )
 
     begin {
-        Write-Debug "[Remove-JiraUser] Reading information from config file"
-        try {
-            Write-Debug "[Remove-JiraUser] Reading Jira server from config file"
-            $server = Get-JiraConfigServer -ConfigFile $ConfigFile -ErrorAction Stop
-        }
-        catch {
-            $err = $_
-            Write-Debug "[Remove-JiraUser] Encountered an error reading configuration data."
-            throw $err
-        }
-
-        $userURL = "$server/rest/api/latest/user?username={0}"
+        $userURL = "/rest/api/latest/user?username={0}"
 
         if ($Force) {
             Write-Debug "[Remove-JiraGroup] -Force was passed. Backing up current ConfirmPreference [$ConfirmPreference] and setting to None"
@@ -64,7 +58,7 @@ function Remove-JiraUser {
     process {
         foreach ($u in $User) {
             Write-Debug "[Remove-JiraUser] Obtaining reference to user [$u]"
-            $userObj = Get-JiraUser -InputObject $u -Credential $Credential
+            $userObj = Get-JiraUser -InputObject $u -ServerName $ServerName -Credential $Credential
 
             if ($userObj) {
                 $thisUrl = $userUrl -f $userObj.Name
@@ -73,7 +67,7 @@ function Remove-JiraUser {
                 Write-Debug "[Remove-JiraUser] Checking for -WhatIf and Confirm"
                 if ($PSCmdlet.ShouldProcess($userObj.Name, 'Completely remove user from JIRA')) {
                     Write-Debug "[Remove-JiraUser] Preparing for blastoff!"
-                    Invoke-JiraMethod -Method Delete -URI $thisUrl -Credential $Credential
+                    Invoke-JiraMethod -Method Delete -URI $thisUrl -ServerName $ServerName -Credential $Credential
                 }
                 else {
                     Write-Debug "[Remove-JiraUser] Runnning in WhatIf mode or user denied the Confirm prompt; no operation will be performed"

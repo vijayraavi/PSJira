@@ -14,30 +14,26 @@ InModuleScope JiraPS {
 
     Describe "Remove-JiraGroupMember" {
 
-        Mock Write-Debug -ModuleName JiraPS {
-            if ($ShowDebugData) {
+        if ($ShowDebugData) {
+            Mock Write-Debug {
                 Write-Host -Object "[DEBUG] $Message" -ForegroundColor Yellow
             }
         }
 
-        Mock Get-JiraConfigServer -ModuleName JiraPS {
-            Write-Output $jiraServer
-        }
-
-        Mock Get-JiraGroup -ModuleName JiraPS {
+        Mock Get-JiraGroup {
             [PSCustomObject] @{
                 'Name' = $testGroupName;
                 'Size' = 2;
             }
         }
 
-        Mock Get-JiraUser -ModuleName JiraPS {
+        Mock Get-JiraUser {
             [PSCustomObject] @{
                 'Name' = "$InputObject";
             }
         }
 
-        Mock Get-JiraGroupMember -ModuleName JiraPS {
+        Mock Get-JiraGroupMember {
             @(
                 [PSCustomObject] @{
                     'Name' = $testUsername1;
@@ -45,12 +41,8 @@ InModuleScope JiraPS {
             )
         }
 
-        Mock Invoke-JiraMethod -ModuleName JiraPS {
-            if ($ShowMockData) {
-                Write-Host "       Mocked Invoke-JiraMethod" -ForegroundColor Cyan
-                Write-Host "         [Method] $Method" -ForegroundColor Cyan
-                Write-Host "         [URI]    $URI" -ForegroundColor Cyan
-            }
+        Mock Invoke-JiraMethod {
+            ShowMockInfo 'Invoke-JiraMethod' 'Method', 'URI', 'ServerName'
         }
 
         #############
@@ -90,7 +82,7 @@ InModuleScope JiraPS {
             It "Removes multiple users to a JIRA group if they are passed to the -User parameter" {
 
                 # Override our previous mock so we have two group members
-                Mock Get-JiraGroupMember -ModuleName JiraPS {
+                Mock Get-JiraGroupMember {
                     @(
                         [PSCustomObject] @{
                             'Name' = $testUsername1;
@@ -104,6 +96,13 @@ InModuleScope JiraPS {
                 # Should use the REST method twice, since at present, you can only delete one group member per API call
                 { Remove-JiraGroupMember -Group $testGroupName -User $testUsername1, $testUsername2 -Force } | Should Not Throw
                 Assert-MockCalled -CommandName Invoke-JiraMethod -ParameterFilter {$Method -eq 'Delete' -and $URI -like "*/rest/api/*/group/user?groupname=$testGroupName&username=*"} -Exactly -Times 2 -Scope It
+            }
+
+            It "Passes the -ServerName parameter to Get-JiraGroup, Get-JiraUser, and Invoke-JiraMethod if specified" {
+                Remove-JiraGroupMember -Group $testGroupName -User $testUsername1, $testUsername2 -Force -ServerName 'testServer' | Out-Null
+                Assert-MockCalled -CommandName Get-JiraGroup -ParameterFilter {$ServerName -eq 'testServer'}
+                Assert-MockCalled -CommandName Get-JiraUser -ParameterFilter {$ServerName -eq 'testServer'}
+                Assert-MockCalled -CommandName Invoke-JiraMethod -ParameterFilter {$ServerName -eq 'testServer'}
             }
         }
 

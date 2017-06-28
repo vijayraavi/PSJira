@@ -27,34 +27,24 @@ InModuleScope JiraPS {
 
     Describe "Remove-JiraGroup" {
 
-        Mock Write-Debug -ModuleName JiraPS {
-            if ($ShowDebugData) {
+        if ($ShowDebugData) {
+            Mock Write-Debug -ModuleName JiraPS {
                 Write-Host -Object "[DEBUG] $Message" -ForegroundColor Yellow
             }
-        }
-
-        Mock Get-JiraConfigServer -ModuleName JiraPS {
-            Write-Output $jiraServer
         }
 
         Mock Get-JiraGroup -ModuleName JiraPS {
             ConvertTo-JiraGroup (ConvertFrom-Json2 $testJson)
         }
 
-        Mock Invoke-JiraMethod -ModuleName JiraPS -ParameterFilter {$Method -eq 'DELETE' -and $URI -eq "$jiraServer/rest/api/latest/group?groupname=$testGroupName"} {
-            if ($ShowMockData) {
-                Write-Host "       Mocked Invoke-JiraMethod with DELETE method" -ForegroundColor Cyan
-                Write-Host "         [Method]         $Method" -ForegroundColor Cyan
-                Write-Host "         [URI]            $URI" -ForegroundColor Cyan
-            }
+        Mock Invoke-JiraMethod -ModuleName JiraPS -ParameterFilter {$Method -eq 'DELETE' -and $URI -eq "/rest/api/latest/group?groupname=$testGroupName"} {
+            ShowMockInfo 'Invoke-JiraMethod' 'Method', 'URI', 'ServerName'
             # This REST method should produce no output
         }
 
         # Generic catch-all. This will throw an exception if we forgot to mock something.
         Mock Invoke-JiraMethod -ModuleName JiraPS {
-            Write-Host "       Mocked Invoke-JiraMethod with no parameter filter." -ForegroundColor DarkRed
-            Write-Host "         [Method]         $Method" -ForegroundColor DarkRed
-            Write-Host "         [URI]            $URI" -ForegroundColor DarkRed
+            ShowMockInfo 'Invoke-JiraMethod' 'Method', 'URI', 'ServerName'
             throw "Unidentified call to Invoke-JiraMethod"
         }
 
@@ -85,6 +75,12 @@ InModuleScope JiraPS {
 
         It "Provides no output" {
             Remove-JiraGroup -Group $testGroupName -Force | Should BeNullOrEmpty
+        }
+
+        It "Passes the -ServerName parameter to both Get-JiraGroup and Invoke-JiraMethod if specified" {
+            Remove-JiraGroup -Group $testGroupName -ServerName 'testServer' -Force | Out-Null
+            Assert-MockCalled -CommandName Get-JiraGroup -ParameterFilter {$ServerName -eq 'testServer'}
+            Assert-MockCalled -CommandName Invoke-JiraMethod -ParameterFilter {$ServerName -eq 'testServer'}
         }
     }
 }

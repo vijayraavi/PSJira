@@ -37,6 +37,11 @@ function Remove-JiraRemoteLink {
         # Suppress user confirmation.
         [Switch] $Force,
 
+        # Server name from the module config to connect to.
+        # If not specified, the default server will be used.
+        [Parameter(Mandatory = $false)]
+        [String] $ServerName,
+
         # Credentials to use to connect to JIRA.
         # If not specified, this function will use anonymous access.
         [Parameter(Mandatory = $false)]
@@ -44,17 +49,7 @@ function Remove-JiraRemoteLink {
     )
 
     Begin {
-        try {
-            Write-Debug "[Remove-JiraRemoteLink] Reading Jira server from config file"
-            $server = Get-JiraConfigServer -ConfigFile $ConfigFile -ErrorAction Stop
-        }
-        catch {
-            $err = $_
-            Write-Debug "[Remove-JiraRemoteLink] Encountered an error reading configuration data."
-            throw $err
-        }
-
-        $restUrl = "$server/rest/api/latest/issue/{0}/remotelink/{1}"
+        $restUrl = "/rest/api/latest/issue/{0}/remotelink/{1}"
 
         if ($Force) {
             Write-Debug "[Remove-JiraRemoteLink] -Force was passed. Backing up current ConfirmPreference [$ConfirmPreference] and setting to None"
@@ -67,7 +62,7 @@ function Remove-JiraRemoteLink {
 
         foreach ($k in $Issue) {
             Write-Debug "[Remove-JiraRemoteLink] Processing issue key [$k]"
-            $issueObj = Get-JiraIssue $k -Credential $Credential
+            $issueObj = Get-JiraIssue $k -ServerName $ServerName -Credential $Credential
 
             foreach ($l in $LinkId) {
                 $thisUrl = $restUrl -f $k, $l
@@ -76,7 +71,7 @@ function Remove-JiraRemoteLink {
                 Write-Debug "[Remove-JiraRemoteLink] Checking for -WhatIf and Confirm"
                 if ($PSCmdlet.ShouldProcess($issueObj.Key, "Remove RemoteLink from [$issueObj] from JIRA")) {
                     Write-Debug "[Remove-JiraRemoteLink] Preparing for blastoff!"
-                    Invoke-JiraMethod -Method Delete -URI $thisUrl -Credential $Credential
+                    Invoke-JiraMethod -Method Delete -URI $thisUrl -ServerName $ServerName -Credential $Credential
                 }
                 else {
                     Write-Debug "[Remove-JiraRemoteLink] Runnning in WhatIf mode or user denied the Confirm prompt; no operation will be performed"

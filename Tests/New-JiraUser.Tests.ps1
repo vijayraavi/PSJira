@@ -26,30 +26,20 @@ InModuleScope JiraPS {
 
     Describe "New-JiraUser" {
 
-        Mock Write-Debug {
-            if ($ShowDebugData) {
+        if ($ShowDebugData) {
+            Mock Write-Debug {
                 Write-Host -Object "[DEBUG] $Message" -ForegroundColor Yellow
             }
         }
 
-        Mock Get-JiraConfigServer -ModuleName JiraPS {
-            Write-Output $jiraServer
-        }
-
-        Mock Invoke-JiraMethod -ModuleName JiraPS -ParameterFilter {$Method -eq 'POST' -and $URI -eq "$jiraServer/rest/api/latest/user"} {
-            if ($ShowMockData) {
-                Write-Host "       Mocked Invoke-JiraMethod with POST method" -ForegroundColor Cyan
-                Write-Host "         [Method]         $Method" -ForegroundColor Cyan
-                Write-Host "         [URI]            $URI" -ForegroundColor Cyan
-            }
+        Mock Invoke-JiraMethod -ParameterFilter {$Method -eq 'POST' -and $URI -eq "/rest/api/latest/user"} {
+            ShowMockInfo 'Invoke-JiraMethod' 'Method', 'URI', 'ServerName'
             ConvertFrom-Json2 $testJson
         }
 
         # Generic catch-all. This will throw an exception if we forgot to mock something.
-        Mock Invoke-JiraMethod -ModuleName JiraPS {
-            Write-Host "       Mocked Invoke-JiraMethod with no parameter filter." -ForegroundColor DarkRed
-            Write-Host "         [Method]         $Method" -ForegroundColor DarkRed
-            Write-Host "         [URI]            $URI" -ForegroundColor DarkRed
+        Mock Invoke-JiraMethod {
+            ShowMockInfo 'Invoke-JiraMethod' 'Method', 'URI', 'ServerName'
             throw "Unidentified call to Invoke-JiraMethod"
         }
 
@@ -60,6 +50,11 @@ InModuleScope JiraPS {
         It "Creates a user in JIRA and returns a result" {
             $newResult = New-JiraUser -UserName $testUsername -EmailAddress $testEmail -DisplayName $testDisplayName
             $newResult | Should Not BeNullOrEmpty
+        }
+
+        It "Passes the -ServerName parameter to Invoke-JiraMethod if specified" {
+            New-JiraUser -UserName $testUsername -EmailAddress $testEmail -DisplayName $testDisplayName -ServerName 'testServer' | Out-Null
+            Assert-MockCalled -CommandName Invoke-JiraMethod -ParameterFilter {$ServerName -eq 'testServer'}
         }
 
         Context "Output checking" {

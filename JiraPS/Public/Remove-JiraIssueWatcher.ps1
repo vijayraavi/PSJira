@@ -39,19 +39,19 @@
         [Alias('Key')]
         [Object] $Issue,
 
+        # Server name from the module config to connect to.
+        # If not specified, the default server will be used.
+        [Parameter(Mandatory = $false)]
+        [String] $ServerName,
+
         # Credentials to use to connect to Jira. If not specified, this function will use
         [Parameter(Mandatory = $false)]
         [System.Management.Automation.PSCredential] $Credential
     )
 
-    begin {
-        Write-Debug "[Remove-JiraIssueWatcher] Begin"
-        # We can't validate pipeline input here, since pipeline input doesn't exist in the Begin block.
-    }
-
     process {
         Write-Debug "[Remove-JiraIssueWatcher] Obtaining a reference to Jira issue [$Issue]"
-        $issueObj = Get-JiraIssue -InputObject $Issue -Credential $Credential
+        $issueObj = Get-JiraIssue -InputObject $Issue -ServerName $ServerName -Credential $Credential
 
         foreach ($username in $Watcher) {
             $url = "$($issueObj.RestURL)/watchers?username=$username"

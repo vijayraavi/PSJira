@@ -32,15 +32,11 @@ InModuleScope JiraPS {
             }
         }
 
-        Mock Get-JiraConfigServer -ModuleName JiraPS {
-            Write-Output $jiraServer
-        }
-
         Mock Get-JiraUser -ModuleName JiraPS {
             ConvertTo-JiraUser (ConvertFrom-Json2 $testJsonGet)
         }
 
-        Mock Invoke-JiraMethod -ModuleName JiraPS -ParameterFilter {$Method -eq 'DELETE' -and $URI -eq "$jiraServer/rest/api/latest/user?username=$testUsername"} {
+        Mock Invoke-JiraMethod -ModuleName JiraPS -ParameterFilter {$Method -eq 'DELETE' -and $URI -eq "/rest/api/latest/user?username=$testUsername"} {
             if ($ShowMockData) {
                 Write-Host "       Mocked Invoke-JiraMethod with DELETE method" -ForegroundColor Cyan
                 Write-Host "         [Method]         $Method" -ForegroundColor Cyan
@@ -84,6 +80,12 @@ InModuleScope JiraPS {
 
         It "Provides no output" {
             Remove-JiraUser -User $testUsername -Force | Should BeNullOrEmpty
+        }
+
+        It "Passes the -ServerName parameter to Get-JiraUser and Invoke-JiraMethod if specified" {
+            Remove-JiraUser -User $testUsername -Force -ServerName 'testServer' | Out-Null
+            Assert-MockCalled -CommandName Get-JiraUser -ParameterFilter {$ServerName -eq 'testServer'}
+            Assert-MockCalled -CommandName Invoke-JiraMethod -ParameterFilter {$ServerName -eq 'testServer'}
         }
     }
 }

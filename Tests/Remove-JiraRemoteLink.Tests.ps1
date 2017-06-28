@@ -41,10 +41,6 @@ InModuleScope JiraPS {
             }
         }
 
-        Mock Get-JiraConfigServer -ModuleName JiraPS {
-            Write-Output $jiraServer
-        }
-
         Mock Get-JiraIssue {
             [PSCustomObject] @{
                 'RestURL' = 'https://jira.example.com/rest/api/2/issue/12345'
@@ -106,6 +102,12 @@ InModuleScope JiraPS {
 
         It "Provides no output" {
             Remove-JiraRemoteLink -Issue $testIssueKey -LinkId 10000 -Force | Should BeNullOrEmpty
+        }
+
+        It "Passes the -ServerName parameter to Get-JiraIssue and Invoke-JiraMethod if specified" {
+            Remove-JiraRemoteLink -Issue $testIssueKey -LinkId 10000 -Force -ServerName 'testServer' | Out-Null
+            Assert-MockCalled -CommandName Get-JiraIssue -ParameterFilter {$ServerName -eq 'testServer'}
+            Assert-MockCalled -CommandName Invoke-JiraMethod -ParameterFilter {$ServerName -eq 'testServer'}
         }
     }
 }

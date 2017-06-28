@@ -61,6 +61,11 @@ function Set-JiraUser {
         )]
         [Hashtable] $Property,
 
+        # Server name from the module config to connect to.
+        # If not specified, the default server will be used.
+        [Parameter(Mandatory = $false)]
+        [String] $ServerName,
+
         # Credentials to use to connect to JIRA.
         # If not specified, this function will use anonymous access.
         [Parameter(Mandatory = $false)]
@@ -71,9 +76,6 @@ function Set-JiraUser {
     )
 
     begin {
-        Write-Debug "[Set-JiraUser] Reading server from config file"
-        $server = Get-JiraConfigServer -ConfigFile $ConfigFile -ErrorAction Stop
-
         Write-Debug "[Set-JiraIssue] ParameterSetName=$($PSCmdlet.ParameterSetName)"
 
         $updateProps = @{}
@@ -99,13 +101,13 @@ function Set-JiraUser {
         }
 
         Write-Debug "[Set-JiraUser] Building URI for REST call"
-        $userUrl = "$server/rest/api/latest/user?username={0}"
+        $userUrl = "/rest/api/latest/user?username={0}"
     }
 
     process {
         foreach ($u in $User) {
             Write-Debug "[Set-JiraUser] Obtaining reference to user [$u]"
-            $userObj = Get-JiraUser -InputObject $u -Credential $Credential
+            $userObj = Get-JiraUser -InputObject $u -ServerName $ServerName -Credential $Credential
 
             if ($userObj) {
                 $thisUrl = $userUrl -f $userObj.Name
@@ -114,13 +116,13 @@ function Set-JiraUser {
                 Write-Debug "[Set-JiraUser] Checking for -WhatIf and Confirm"
                 if ($PSCmdlet.ShouldProcess($User, "Updating user [$User] from JIRA")) {
                     Write-Debug "Preparing for blastoff!"
-                    $result = Invoke-JiraMethod -Method Put -URI $thisUrl -Body $updateProps -Credential $Credential
+                    $result = Invoke-JiraMethod -Method Put -URI $thisUrl -Body $updateProps -ServerName $ServerName -Credential $Credential
                 }
                 if ($result) {
                     Write-Debug "[Set-JiraUser] JIRA returned results."
                     if ($PassThru) {
                         Write-Debug "[Set-JiraUser] PassThru flag was specified. Invoking Get-JiraUser to get an updated reference to user [$u]"
-                        Write-Output (Get-JiraUser -InputObject $u)
+                        Write-Output (Get-JiraUser -InputObject $u -ServerName $ServerName -Credential $Credential)
                     }
                 }
                 else {

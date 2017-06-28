@@ -70,6 +70,11 @@ function New-JiraIssue {
         [Parameter(Mandatory = $false)]
         [Hashtable] $Fields,
 
+        # Server name from the module config to connect to.
+        # If not specified, the default server will be used.
+        [Parameter(Mandatory = $false)]
+        [String] $ServerName,
+
         # Credentials to use to connect to JIRA.
         # If not specified, this function will use anonymous access.
         [Parameter(Mandatory = $false)]
@@ -77,30 +82,19 @@ function New-JiraIssue {
     )
 
     begin {
-        Write-Debug "[New-JiraIssue] Reading information from config file"
-        try {
-            Write-Debug "[New-JiraIssue] Reading Jira server from config file"
-            $server = Get-JiraConfigServer -ConfigFile $ConfigFile -ErrorAction Stop
+        $issueURL = "/rest/api/latest/issue"
 
-            Write-Debug "[New-JiraIssue] Reading Jira issue create metadata"
-            $createmeta = Get-JiraIssueCreateMetadata -Project $Project -IssueType $IssueType -ConfigFile $ConfigFile -Credential $Credential -ErrorAction Stop
-        }
-        catch {
-            $err = $_
-            Write-Debug "[New-JiraIssue] Encountered an error reading configuration data."
-            throw $err
-        }
-
-        $issueURL = "$server/rest/api/latest/issue"
+        Write-Debug "[New-JiraIssue] Reading Jira issue create metadata"
+        $createmeta = Get-JiraIssueCreateMetadata -Project $Project -IssueType $IssueType -ServerName $ServerName -Credential $Credential -ErrorAction Stop
 
         Write-Debug "[New-JiraIssue] Obtaining a reference to Jira project [$Project]"
-        $ProjectObj = Get-JiraProject -Project $Project -Credential $Credential
+        $ProjectObj = Get-JiraProject -Project $Project -ServerName $ServerName -Credential $Credential
         if (-not ($ProjectObj)) {
             throw "Unable to identify Jira project [$Project]. Use Get-JiraProject for more information."
         }
 
         Write-Debug "[New-JiraIssue] Obtaining a reference to Jira issue type [$IssueType]"
-        $IssueTypeObj = Get-JiraIssueType -IssueType $IssueType -Credential $Credential
+        $IssueTypeObj = Get-JiraIssueType -IssueType $IssueType -ServerName $ServerName -Credential $Credential
         if (-not ($IssueTypeObj)) {
             throw "Unable to identify Jira issue type [$IssueType]. Use Get-JiraIssueType for more information."
         }
@@ -153,7 +147,7 @@ function New-JiraIssue {
             $value = $Fields.$k
             Write-Debug "[New-JiraIssue] Attempting to identify field (name=[$name], value=[$value])"
 
-            $f = Get-JiraField -Field $name -Credential $Credential
+            $f = Get-JiraField -Field $name -ServerName $ServerName -Credential $Credential
 
             if ($f) {
                 $id = $f.ID
@@ -199,7 +193,7 @@ function New-JiraIssue {
         Write-Debug "[New-JiraIssue] Checking for -WhatIf and Confirm"
         if ($PSCmdlet.ShouldProcess($Summary, "Creating new Issue on JIRA")) {
             Write-Debug "[New-JiraIssue] Preparing for blastoff!"
-            $result = Invoke-JiraMethod -Method Post -URI $issueURL -Body $json -Credential $Credential
+            $result = Invoke-JiraMethod -Method Post -URI $issueURL -Body $json -ServerName $ServerName -Credential $Credential
         }
 
         if ($result) {

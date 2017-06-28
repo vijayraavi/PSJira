@@ -28,15 +28,11 @@ InModuleScope JiraPS {
 
     Describe "Set-JiraUser" {
 
-        Mock Get-JiraConfigServer -ModuleName JiraPS {
-            Write-Output $jiraServer
-        }
-
-        Mock Get-JiraUser -ModuleName JiraPS {
+        Mock Get-JiraUser {
             ConvertTo-JiraUser (ConvertFrom-Json2 $restResultGet)
         }
 
-        Mock Invoke-JiraMethod -ModuleName JiraPS -ParameterFilter {$Method -eq 'Put' -and $URI -eq "$jiraServer/rest/api/latest/user?username=$testUsername"} {
+        Mock Invoke-JiraMethod -ParameterFilter {$Method -eq 'Put' -and $URI -eq "/rest/api/latest/user?username=$testUsername"} {
             if ($ShowMockData) {
                 Write-Host "       Mocked Invoke-JiraMethod with GET method" -ForegroundColor Cyan
                 Write-Host "         [Method] $Method" -ForegroundColor Cyan
@@ -46,16 +42,12 @@ InModuleScope JiraPS {
         }
 
         # Generic catch-all. This will throw an exception if we forgot to mock something.
-        Mock Invoke-JiraMethod -ModuleName JiraPS {
+        Mock Invoke-JiraMethod {
             Write-Host "       Mocked Invoke-JiraMethod with no parameter filter." -ForegroundColor DarkRed
             Write-Host "         [Method]         $Method" -ForegroundColor DarkRed
             Write-Host "         [URI]            $URI" -ForegroundColor DarkRed
             throw "Unidentified call to Invoke-JiraMethod"
         }
-
-        # Mock Write-Debug {
-        #     Write-Host "DEBUG: $Message" -ForegroundColor Yellow
-        # }
 
         #############
         # Tests
@@ -97,6 +89,12 @@ InModuleScope JiraPS {
         It "Outputs a JiraPS.User object if the -PassThru parameter is passed" {
             $output = Set-JiraUser -User $testUsername -DisplayName $testDisplayNameChanged -PassThru
             $output | Should Not BeNullOrEmpty
+        }
+
+        It "Passes the -ServerName parameter to Get-JiraUser and Invoke-JiraMethod if specified" {
+            Set-JiraUser -User $testUsername -DisplayName $testDisplayNameChanged -PassThru -ServerName 'testServer' | Out-Null
+            Assert-MockCalled -CommandName Invoke-JiraMethod -ParameterFilter {$ServerName -eq 'testServer'}
+            Assert-MockCalled -CommandName Get-JiraUser -ParameterFilter {$ServerName -eq 'testServer'} -Exactly -Times 2 -Scope It
         }
     }
 }

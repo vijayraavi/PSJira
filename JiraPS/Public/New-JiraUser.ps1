@@ -39,6 +39,11 @@ function New-JiraUser {
         # Should the user receive a notification e-mail?
         [Boolean] $Notify = $true,
 
+        # Server name from the module config to connect to.
+        # If not specified, the default server will be used.
+        [Parameter(Mandatory = $false)]
+        [String] $ServerName,
+
         # Credentials to use to connect to JIRA.
         # If not specified, this function will use anonymous access.
         [Parameter(Mandatory = $false)]
@@ -46,18 +51,7 @@ function New-JiraUser {
     )
 
     begin {
-        Write-Debug "[New-JiraUser] Reading information from config file"
-        try {
-            Write-Debug "[New-JiraUser] Reading Jira server from config file"
-            $server = Get-JiraConfigServer -ConfigFile $ConfigFile -ErrorAction Stop
-        }
-        catch {
-            $err = $_
-            Write-Debug "[New-JiraUser] Encountered an error reading configuration data."
-            throw $err
-        }
-
-        $userURL = "$server/rest/api/latest/user"
+        $userURL = "/rest/api/latest/user"
     }
 
     process {
@@ -84,7 +78,7 @@ function New-JiraUser {
         Write-Debug "[New-JiraUser] Checking for -WhatIf and Confirm"
         if ($PSCmdlet.ShouldProcess($UserName, "Creating new User on JIRA")) {
             Write-Debug "[New-JiraUser] Preparing for blastoff!"
-            $result = Invoke-JiraMethod -Method Post -URI $userURL -Body $json -Credential $Credential
+            $result = Invoke-JiraMethod -Method Post -URI $userURL -Body $json -ServerName $ServerName -Credential $Credential
         }
 
         if ($result) {

@@ -64,6 +64,11 @@
         [Parameter(ParameterSetName = 'ClearLabels')]
         [Switch] $Clear,
 
+        # Server name from the module config to connect to.
+        # If not specified, the default server will be used.
+        [Parameter(Mandatory = $false)]
+        [String] $ServerName,
+
         # Credentials to use to connect to JIRA.
         # If not specified, this function will use anonymous access.
         [Parameter(Mandatory = $false)]
@@ -73,13 +78,10 @@
         [Switch] $PassThru
     )
 
-    begin {
-    }
-
     process {
         foreach ($i in $Issue) {
             Write-Debug "[Set-JiraIssueLabel] Obtaining reference to issue"
-            $issueObj = Get-JiraIssue -InputObject $i -Credential $Credential
+            $issueObj = Get-JiraIssue -InputObject $i -ServerName $ServerName -Credential $Credential
 
             if ($issueObj) {
                 $currentLabels = @($issueObj.labels)
@@ -143,7 +145,7 @@
                     if ($PSCmdlet.ShouldProcess($Issue, "Updating Issue [labels] from JIRA")) {
                         Write-Debug "[Set-JiraIssueLabel] Preparing for blastoff!"
                         # Should return no results
-                        Invoke-JiraMethod -Method Put -URI $url -Body $json -Credential $Credential
+                        Invoke-JiraMethod -Method Put -URI $url -Body $json -ServerName $ServerName -Credential $Credential
                     }
                 }
                 else {
@@ -152,7 +154,7 @@
 
                 if ($PassThru) {
                     Write-Debug "[Set-JiraIssue] PassThru was specified. Obtaining updated reference to issue"
-                    Get-JiraIssue -Key $issueObj.Key -Credential $Credential
+                    Get-JiraIssue -Key $issueObj.Key -ServerName $ServerName -Credential $Credential
                 }
             }
             else {

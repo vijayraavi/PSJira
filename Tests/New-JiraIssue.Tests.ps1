@@ -13,13 +13,9 @@ InModuleScope JiraPS {
             }
         }
 
-        Mock Get-JiraConfigServer {
-            'https://jira.example.com'
-        }
-
         # If we don't override this in a context or test, we don't want it to
         # actually try to query a JIRA instance
-        Mock Invoke-JiraMethod {}
+        Mock Invoke-JiraMethod
 
         Mock Get-JiraProject {
             [PSCustomObject] @{
@@ -38,6 +34,8 @@ InModuleScope JiraPS {
                 'Name' = $UserName;
             }
         }
+
+        Mock Get-JiraIssueCreateMetadata
 
         # This one needs to be able to output multiple objects
         Mock Get-JiraField {
@@ -93,6 +91,17 @@ InModuleScope JiraPS {
                 # we should expect to see in the JSON that should be sent,
                 # including the summary provided in the test call above.
                 Assert-MockCalled -CommandName Invoke-JiraMethod -ModuleName JiraPS -Times 1 -Scope It -ParameterFilter { $Method -eq 'Post' -and $URI -like '*/rest/api/*/issue' }
+            }
+
+            It "Passes the -ServerName parameter to all relevant functions if specified" {
+                New-JiraIssue @newParams -ServerName 'testServer' | Out-Null
+                Assert-MockCalled -CommandName Get-JiraIssueCreateMetadata -ParameterFilter {$ServerName -eq 'testServer'}
+                Assert-MockCalled -CommandName Get-JiraProject -ParameterFilter {$ServerName -eq 'testServer'}
+                Assert-MockCalled -CommandName Get-JiraIssueType -ParameterFilter {$ServerName -eq 'testServer'}
+                Assert-MockCalled -CommandName Invoke-JiraMethod -ParameterFilter {$ServerName -eq 'testServer'}
+
+                # This one hasn't been called in this test case since we didn't use the -Field parameter.
+                # Assert-MockCalled -CommandName Get-JiraField -ParameterFilter {$ServerName -eq 'testServer'}
             }
         }
 

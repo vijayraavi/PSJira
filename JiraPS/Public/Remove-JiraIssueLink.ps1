@@ -28,15 +28,17 @@ function Remove-JiraIssueLink {
         )]
         [Object[]] $IssueLink,
 
+        # Server name from the module config to connect to.
+        # If not specified, the default server will be used.
+        [Parameter(Mandatory = $false)]
+        [String] $ServerName,
+
         # Credentials to use to connect to Jira
         [Parameter(Mandatory = $false)]
         [PSCredential] $Credential
     )
 
     Begin {
-        Write-Debug "[Remove-JiraIssueLink] Reading Jira server from config file"
-        $server = Get-JiraConfigServer -ConfigFile $ConfigFile -ErrorAction Stop
-
         $restUrl = "$server/rest/api/latest/issueLink/{0}"
     }
 
@@ -68,7 +70,7 @@ function Remove-JiraIssueLink {
             $thisUrl = $restUrl -f $link.id
             if ($PSCmdlet.ShouldProcess($link.id, "Remove IssueLink")) {
                 Write-Debug "[Remove-JiraIssueLink] Preparing for blastoff!"
-                Invoke-JiraMethod -Method Delete -URI $thisUrl -Credential $Credential
+                Invoke-JiraMethod -Method Delete -URI $thisUrl -ServerName $ServerName -Credential $Credential
             }
         }
     }

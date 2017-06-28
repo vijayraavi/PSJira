@@ -62,9 +62,10 @@ function Set-JiraIssue {
         # Any additional fields that should be updated.
         [System.Collections.Hashtable] $Fields,
 
-        # Path of the file where the configuration is stored.
-        [ValidateScript( {Test-Path $_})]
-        [String] $ConfigFile,
+        # Server name from the module config to connect to.
+        # If not specified, the default server will be used.
+        [Parameter(Mandatory = $false)]
+        [String] $ServerName,
 
         # Credentials to use to connect to JIRA.
         # If not specified, this function will use anonymous access.
@@ -114,7 +115,7 @@ function Set-JiraIssue {
             $actOnAssigneeUri = $false
 
             Write-Debug "[Set-JiraIssue] Obtaining reference to issue"
-            $issueObj = Get-JiraIssue -InputObject $i -Credential $Credential
+            $issueObj = Get-JiraIssue -InputObject $i -ServerName $ServerName -Credential $Credential
 
             if ($issueObj) {
                 $issueProps = @{
@@ -159,7 +160,7 @@ function Set-JiraIssue {
                         $value = $Fields.$k
                         Write-Debug "[Set-JiraIssue] Attempting to identify field (name=[$name], value=[$value])"
 
-                        $f = Get-JiraField -Field $name -Credential $Credential
+                        $f = Get-JiraField -Field $name -ServerName $ServerName -Credential $Credential
                         if ($f) {
                             # For some reason, this was coming through as a hashtable instead of a String,
                             # which was causing ConvertTo-Json to crash later.
@@ -197,7 +198,7 @@ function Set-JiraIssue {
                     Write-Debug "[Set-JiraIssue] Checking for -WhatIf and Confirm"
                     if ($PSCmdlet.ShouldProcess($Issue, "Updating Issue [$IssueObj] from JIRA")) {
                         Write-Debug "[Set-JiraIssue] Preparing for blastoff!"
-                        Invoke-JiraMethod -Method Put -URI $issueObjURL -Body $json -Credential $Credential
+                        Invoke-JiraMethod -Method Put -URI $issueObjURL -Body $json -ServerName $ServerName -Credential $Credential
                     }
                 }
 
@@ -211,18 +212,18 @@ function Set-JiraIssue {
                     Write-Debug "[Set-JiraIssue] Checking for -WhatIf and Confirm"
                     if ($PSCmdlet.ShouldProcess($Issue, "Updating Issue [Assignee] from JIRA")) {
                         Write-Debug "[Set-JiraIssue] Preparing for blastoff!"
-                        Invoke-JiraMethod -Method Put -URI $assigneeUrl -Body $json -Credential $Credential
+                        Invoke-JiraMethod -Method Put -URI $assigneeUrl -Body $json -ServerName $ServerName -Credential $Credential
                     }
                 }
 
                 if ($Label) {
                     Write-Debug "[Set-JiraIssue] Invoking Set-JiraIssueLabel to set issue labels"
-                    Set-JiraIssueLabel -Issue $issueObj -Set $Label -Credential $Credential
+                    Set-JiraIssueLabel -Issue $issueObj -Set $Label -ServerName $ServerName -Credential $Credential
                 }
 
                 if ($PassThru) {
                     Write-Debug "[Set-JiraIssue] PassThru was specified. Obtaining updated reference to issue"
-                    Get-JiraIssue -Key $issueObj.Key -Credential $Credential
+                    Get-JiraIssue -Key $issueObj.Key -ServerName $ServerName -Credential $Credential
                 }
             }
             else {

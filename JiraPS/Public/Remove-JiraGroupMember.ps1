@@ -45,6 +45,11 @@ function Remove-JiraGroupMember {
         # Whether output should be provided after invoking this function
         [Switch] $PassThru,
 
+        # Server name from the module config to connect to.
+        # If not specified, the default server will be used.
+        [Parameter(Mandatory = $false)]
+        [String] $ServerName,
+
         # Credentials to use to connect to JIRA.
         # If not specified, this function will use anonymous access.
         [Parameter(Mandatory = $false)]
@@ -52,18 +57,7 @@ function Remove-JiraGroupMember {
     )
 
     begin {
-        Write-Debug "[Remove-JiraGroupMember] Reading information from config file"
-        try {
-            Write-Debug "[Remove-JiraGroupMember] Reading Jira server from config file"
-            $server = Get-JiraConfigServer -ConfigFile $ConfigFile -ErrorAction Stop
-        }
-        catch {
-            $err = $_
-            Write-Debug "[Remove-JiraGroupMember] Encountered an error reading configuration data."
-            throw $err
-        }
-
-        $restUrl = "$server/rest/api/latest/group/user?groupname={0}&username={1}"
+        $restUrl = "/rest/api/latest/group/user?groupname={0}&username={1}"
 
         if ($Force) {
             Write-Debug "[Remove-JiraGroupMember] -Force was passed. Backing up current ConfirmPreference [$ConfirmPreference] and setting to None"
@@ -75,15 +69,15 @@ function Remove-JiraGroupMember {
     process {
         foreach ($g in $Group) {
             Write-Debug "[Remove-JiraGroupMember] Obtaining reference to group [$g]"
-            $groupObj = Get-JiraGroup -InputObject $g -Credential $Credential
+            $groupObj = Get-JiraGroup -InputObject $g -ServerName $ServerName -Credential $Credential
 
             if ($groupObj) {
                 Write-Debug "[Remove-JiraGroupMember] Obtaining members of group [$g]"
-                $groupMembers = Get-JiraGroupMember -Group $g -Credential $Credential | Select-Object -ExpandProperty Name
+                $groupMembers = Get-JiraGroupMember -Group $g -ServerName $ServerName -Credential $Credential | Select-Object -ExpandProperty Name
 
                 foreach ($u in $User) {
                     Write-Debug "[Remove-JiraGroupMember] Obtaining reference to user [$u]"
-                    $userObj = Get-JiraUser -InputObject $u -Credential $Credential
+                    $userObj = Get-JiraUser -InputObject $u -ServerName $ServerName -Credential $Credential
 
                     if ($userObj) {
                         Write-Debug "[Remove-JiraGroupMember] Retrieved user reference [$userObj]"
@@ -95,7 +89,7 @@ function Remove-JiraGroupMember {
                             Write-Debug "[Remove-JiraGroupMember] Checking for -WhatIf and Confirm"
                             if ($PSCmdlet.ShouldProcess("$groupObj", "Remove $userObj from group")) {
                                 Write-Debug "[Remove-JiraGroupMember] Preparing for blastoff!"
-                                Invoke-JiraMethod -Method Delete -URI $thisRestUrl -Credential $Credential
+                                Invoke-JiraMethod -Method Delete -URI $thisRestUrl -ServerName $ServerName -Credential $Credential
                             }
                             else {
                                 Write-Debug "[Remove-JiraGroupMember] Runnning in WhatIf mode or user denied the Confirm prompt; no operation will be performed"
@@ -114,7 +108,7 @@ function Remove-JiraGroupMember {
 
                 if ($PassThru) {
                     Write-Debug "[Remove-JiraGroupMember] -PassThru specified. Obtaining a final reference to group [$g]"
-                    $groupObjNew = Get-JiraGroup -InputObject $g -Credential $Credential
+                    $groupObjNew = Get-JiraGroup -InputObject $g -ServerName $ServerName -Credential $Credential
                     Write-Debug "[Remove-JiraGroupMember] Outputting group [$groupObjNew]"
                     Write-Output $groupObjNew
                 }
